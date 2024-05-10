@@ -1,8 +1,0 @@
-../lwpkt/src/lwpkt/lwpkt.c:95:1:prv_crc_in	40	static
-../lwpkt/src/lwpkt/lwpkt.c:121:1:prv_crc_init	16	static
-../lwpkt/src/lwpkt/lwpkt.c:135:1:lwpkt_init	24	static
-../lwpkt/src/lwpkt/lwpkt.c:175:1:lwpkt_read	24	static
-../lwpkt/src/lwpkt/lwpkt.c:319:1:lwpkt_process	24	static
-../lwpkt/src/lwpkt/lwpkt.c:353:1:lwpkt_write	48	static
-../lwpkt/src/lwpkt/lwpkt.c:500:1:lwpkt_reset	16	static
-../lwpkt/src/lwpkt/lwpkt.c:517:1:lwpkt_set_evt_fn	16	static
