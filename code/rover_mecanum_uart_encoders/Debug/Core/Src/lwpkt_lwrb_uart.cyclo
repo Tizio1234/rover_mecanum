@@ -1,0 +1,6 @@
+../Core/Src/lwpkt_lwrb_uart.c:47:6:lwpkt_lwrb_uart_init	1
+../Core/Src/lwpkt_lwrb_uart.c:51:6:uart_tx_rb_evt_fn	3
+../Core/Src/lwpkt_lwrb_uart.c:69:6:lwpkt_lwrb_uart_task	2
+../Core/Src/lwpkt_lwrb_uart.c:98:6:lwrb_uart_callback	1
+../Core/Src/lwpkt_lwrb_uart.c:102:10:uart_lwpkt_set_evt_fn	1
+../Core/Src/lwpkt_lwrb_uart.c:106:10:uart_lwpkt_write	1

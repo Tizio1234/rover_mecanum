@@ -1,0 +1,6 @@
+../Core/Src/lwpkt_lwrb_uart.c:47:6:lwpkt_lwrb_uart_init	16	static
+../Core/Src/lwpkt_lwrb_uart.c:51:6:uart_tx_rb_evt_fn	40	static
+../Core/Src/lwpkt_lwrb_uart.c:69:6:lwpkt_lwrb_uart_task	24	static
+../Core/Src/lwpkt_lwrb_uart.c:98:6:lwrb_uart_callback	16	static
+../Core/Src/lwpkt_lwrb_uart.c:102:10:uart_lwpkt_set_evt_fn	16	static
+../Core/Src/lwpkt_lwrb_uart.c:106:10:uart_lwpkt_write	16	static

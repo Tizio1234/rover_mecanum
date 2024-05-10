@@ -1,0 +1,11 @@
+../mecanum/mecanum.c:17:6:motor_init	1
+../mecanum/mecanum.c:25:6:motor_stop	1
+../mecanum/mecanum.c:36:6:motor_run	5
+../mecanum/mecanum.c:50:6:encoder_init	1
+../mecanum/mecanum.c:56:6:encoder_callback	1
+../mecanum/mecanum.c:66:17:encoder_get_speed	1
+../mecanum/mecanum.c:71:6:mecanum_robot_init	1
+../mecanum/mecanum.c:83:6:mecanum_robot_stop	1
+../mecanum/mecanum.c:93:6:mecanum_robot_move	4
+../mecanum/mecanum.c:126:6:mecanum_robot_encoders_callback	1
+../mecanum/mecanum.c:133:6:mecanum_robot_get_encoder_speeds	1

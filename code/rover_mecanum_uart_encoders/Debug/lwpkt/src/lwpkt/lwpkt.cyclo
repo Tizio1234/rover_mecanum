@@ -1,0 +1,8 @@
+../lwpkt/src/lwpkt/lwpkt.c:95:1:prv_crc_in	7
+../lwpkt/src/lwpkt/lwpkt.c:121:1:prv_crc_init	1
+../lwpkt/src/lwpkt/lwpkt.c:135:1:lwpkt_init	2
+../lwpkt/src/lwpkt/lwpkt.c:175:1:lwpkt_read	20
+../lwpkt/src/lwpkt/lwpkt.c:319:1:lwpkt_process	7
+../lwpkt/src/lwpkt/lwpkt.c:353:1:lwpkt_write	11
+../lwpkt/src/lwpkt/lwpkt.c:500:1:lwpkt_reset	2
+../lwpkt/src/lwpkt/lwpkt.c:517:1:lwpkt_set_evt_fn	1
