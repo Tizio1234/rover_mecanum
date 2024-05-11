@@ -1,6 +1,6 @@
 # Mecanum f411re pinout
 
-- Pins di direzione motori:
+- Pins di direzione motori(FL-FR-BL-BR, A-B):
   
   - PC0..PC3
   
@@ -8,11 +8,11 @@
   
   - PC10..PC12
 
-- Pins enable motori:
+- Pins enable motori(FL-FR-BL-BR):
   
   - PA8...PA11
 
-- Pins input encoders:
+- Pins input encoders(FL-FR-BL-BR, A-B):
   
   - TIM2:
     
@@ -40,6 +40,6 @@
 
 - Pins UART per ESP32
   
-  - PC6
+  - PC6(TX)
   
-  - PC7
+  - PC7(RX)
