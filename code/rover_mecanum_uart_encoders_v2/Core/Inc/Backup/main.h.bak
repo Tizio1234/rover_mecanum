@@ -57,20 +57,62 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define TIM1_PRESCALER 10-1
+#define TIM1_PERIOD 8400
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define FL_MOTOR_A_Pin GPIO_PIN_0
+#define FL_MOTOR_A_GPIO_Port GPIOC
+#define FL_MOTOR_B_Pin GPIO_PIN_1
+#define FL_MOTOR_B_GPIO_Port GPIOC
+#define FR_MOTOR_A_Pin GPIO_PIN_2
+#define FR_MOTOR_A_GPIO_Port GPIOC
+#define FR_MOTOR_B_Pin GPIO_PIN_3
+#define FR_MOTOR_B_GPIO_Port GPIOC
+#define BR_ENCODER__Pin GPIO_PIN_0
+#define BR_ENCODER__GPIO_Port GPIOA
+#define BR_ENCODER_B_Pin GPIO_PIN_1
+#define BR_ENCODER_B_GPIO_Port GPIOA
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
 #define USART_RX_GPIO_Port GPIOA
-#define LD2_Pin GPIO_PIN_5
-#define LD2_GPIO_Port GPIOA
+#define FL_ENCODER_A_Pin GPIO_PIN_5
+#define FL_ENCODER_A_GPIO_Port GPIOA
+#define FR_ENCODER_A_Pin GPIO_PIN_6
+#define FR_ENCODER_A_GPIO_Port GPIOA
+#define FR_ENCODER_B_Pin GPIO_PIN_7
+#define FR_ENCODER_B_GPIO_Port GPIOA
+#define BL_MOTOR_A_Pin GPIO_PIN_5
+#define BL_MOTOR_A_GPIO_Port GPIOC
+#define ROVER_TX_Pin GPIO_PIN_6
+#define ROVER_TX_GPIO_Port GPIOC
+#define ROVER_RX_Pin GPIO_PIN_7
+#define ROVER_RX_GPIO_Port GPIOC
+#define FL_MOTOR_EN_Pin GPIO_PIN_8
+#define FL_MOTOR_EN_GPIO_Port GPIOA
+#define FR_MOTOR_EN_Pin GPIO_PIN_9
+#define FR_MOTOR_EN_GPIO_Port GPIOA
+#define BL_MOTOR_EN_Pin GPIO_PIN_10
+#define BL_MOTOR_EN_GPIO_Port GPIOA
+#define BR_MOTOR_EN_Pin GPIO_PIN_11
+#define BR_MOTOR_EN_GPIO_Port GPIOA
 #define TMS_Pin GPIO_PIN_13
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define SWO_Pin GPIO_PIN_3
-#define SWO_GPIO_Port GPIOB
+#define BL_MOOR_B_Pin GPIO_PIN_10
+#define BL_MOOR_B_GPIO_Port GPIOC
+#define BR_MOTRO_A_Pin GPIO_PIN_11
+#define BR_MOTRO_A_GPIO_Port GPIOC
+#define BR_MOTOR_B_Pin GPIO_PIN_12
+#define BR_MOTOR_B_GPIO_Port GPIOC
+#define FL_ENCODER_B_Pin GPIO_PIN_3
+#define FL_ENCODER_B_GPIO_Port GPIOB
+#define BL_ENCODER_A_Pin GPIO_PIN_6
+#define BL_ENCODER_A_GPIO_Port GPIOB
+#define BL_ENCODER_B_Pin GPIO_PIN_7
+#define BL_ENCODER_B_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

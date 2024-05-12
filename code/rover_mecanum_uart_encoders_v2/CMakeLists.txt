@@ -66,3 +66,19 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 
     # Add user defined libraries
 )
+
+# Add ext components
+set(LWPKT_OPTS_FILE ${CMAKE_CURRENT_LIST_DIR}/components/app/app_main/inc/lwpkt_opts.h)
+add_subdirectory(components/ext/lwpkt)
+add_subdirectory(components/ext/lwrb)
+
+# Add app components
+add_subdirectory(components/app/app_main)
+
+target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
+
+target_link_libraries(stm32cubemx INTERFACE app_main)
+
+target_link_libraries(lwpkt INTERFACE lwrb)
+
+target_link_libraries(app_main PRIVATE stm32cubemx PUBLIC lwpkt)
