@@ -67,10 +67,29 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
+include(FetchContent)
+FetchContent_Declare(
+    cjson
+    GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
+    GIT_TAG v1.7.18
+)
+FetchContent_MakeAvailable(cjson)
+
+FetchContent_Declare(
+  lwrb
+  GIT_REPOSITORY https://github.com/MaJerle/lwrb.git
+  GIT_TAG        b32c645 # Replace with the desired version
+)
+FetchContent_MakeAvailable(lwrb)
+
 # Add ext components
 set(LWPKT_OPTS_FILE ${CMAKE_CURRENT_LIST_DIR}/components/app/app_main/inc/lwpkt_opts.h)
-add_subdirectory(components/ext/lwpkt)
-add_subdirectory(components/ext/lwrb)
+FetchContent_Declare(
+  lwpkt
+  GIT_REPOSITORY https://github.com/MaJerle/lwpkt.git
+  GIT_TAG        6a82dab # Replace with the desired version
+)
+FetchContent_MakeAvailable(lwpkt)
 
 # Add app components
 add_subdirectory(components/app/app_main)
@@ -81,4 +100,5 @@ target_link_libraries(stm32cubemx INTERFACE app_main)
 
 target_link_libraries(lwpkt INTERFACE lwrb)
 
-target_link_libraries(app_main PRIVATE stm32cubemx PUBLIC lwpkt)
+target_link_libraries(app_main PRIVATE stm32cubemx cjson PUBLIC lwpkt)
+target_include_directories(app_main PUBLIC ${cjson_SOURCE_DIR})

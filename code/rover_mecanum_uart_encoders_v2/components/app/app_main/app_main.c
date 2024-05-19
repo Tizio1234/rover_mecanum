@@ -8,6 +8,8 @@
 #include <lwrb/lwrb.h>
 #include <lwpkt/lwpkt.h>
 
+#include <cJSON.h>
+
 #define HUART huart6
 
 #define OS_MS_TO_TICKS(x) (x * osKernelGetTickFreq() / 1000)
@@ -117,10 +119,10 @@ void app_main_thread_fun(void *param){
         uint32_t start_ticks = osKernelGetTickCount();
         
         char buf[50];
-        int size = snprintf(buf, sizeof(buf), "current time[%u]", OS_TICKS_TO_MS(start_ticks));
+        int size = snprintf(buf, sizeof(buf), "current time[%lu]", OS_TICKS_TO_MS(start_ticks));
 
-        if (size > 0)lwpkt_write(&pkt, buf, size);
-        else printf("size < 0\r\n");
+        if (size > 0) lwpkt_write(&pkt, buf, size);
+        else printf("size <= 0(%i)\r\n", size);
 
         osDelayUntil(start_ticks + OS_MS_TO_TICKS(1000));
     }
@@ -132,4 +134,3 @@ void init_app_main(void){
     printf("Initialized:\r\n");
     printf("app main.\r\n");
 }
-

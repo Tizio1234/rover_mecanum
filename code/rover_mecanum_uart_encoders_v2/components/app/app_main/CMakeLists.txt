@@ -9,6 +9,6 @@ set(INCLUDE_DIRS
 )
 
 project(app_main)
-add_library(${PROJECT_NAME})
+add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME} PUBLIC ${SRCS})
 target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIRS})
