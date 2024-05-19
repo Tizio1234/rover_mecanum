@@ -87,8 +87,7 @@ void pkt_process_thread_fun(void *param){
     while (1)
     {
         osSemaphoreAcquire(pkt_uart_rx_sem_id, osWaitForever);
-        uint32_t ticks = osKernelGetTickCount();
-        while (lwrb_get_full(&pkt_rx_rb) > 0) lwpkt_process(&pkt, OS_TICKS_TO_MS(ticks));
+        while (lwrb_get_full(&pkt_rx_rb) > 0) lwpkt_process(&pkt, OS_TICKS_TO_MS(osKernelGetTickCount()));
     }
 }
 
