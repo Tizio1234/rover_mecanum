@@ -116,7 +116,7 @@ void app_main_thread_fun(void *param){
     while (1)
     {
         uint32_t start_ticks = osKernelGetTickCount();
-        
+
         char buf[50];
         int size = snprintf(buf, sizeof(buf), "current time[%lu]", OS_TICKS_TO_MS(start_ticks));
 

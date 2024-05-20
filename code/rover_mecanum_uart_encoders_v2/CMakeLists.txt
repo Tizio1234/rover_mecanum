@@ -68,6 +68,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 )
 
 include(FetchContent)
+
+set(ENABLE_CJSON_TEST Off)
+set(ENABLE_CJSON_UTILS On)
 FetchContent_Declare(
     cjson
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
@@ -93,12 +96,15 @@ FetchContent_MakeAvailable(lwpkt)
 
 # Add app components
 add_subdirectory(components/app/app_main)
+add_subdirectory(components/app/uart_comm_rb)
 
 target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
 
 target_link_libraries(stm32cubemx INTERFACE app_main)
 
 target_link_libraries(lwpkt INTERFACE lwrb)
+
+target_link_libraries(uart_comm_rb PUBLIC lwrb PRIVATE stm32cubemx)
 
 target_link_libraries(app_main PRIVATE stm32cubemx cjson PUBLIC lwpkt)
 target_include_directories(app_main PUBLIC ${cjson_SOURCE_DIR})
