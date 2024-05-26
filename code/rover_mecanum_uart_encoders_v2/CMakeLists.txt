@@ -67,6 +67,8 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
+message("Downloading required libraries(cjson, lwpkt, lwrb), it can take some time")
+
 include(FetchContent)
 
 set(ENABLE_CJSON_TEST Off)
@@ -96,15 +98,10 @@ FetchContent_MakeAvailable(lwpkt)
 
 # Add app components
 add_subdirectory(components/app/app_main)
-add_subdirectory(components/app/uart_comm_rb)
+add_subdirectory(components/app/uart_rb)
 
-target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
+#target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
 
 target_link_libraries(stm32cubemx INTERFACE app_main)
 
 target_link_libraries(lwpkt INTERFACE lwrb)
-
-target_link_libraries(uart_comm_rb PUBLIC lwrb PRIVATE stm32cubemx)
-
-target_link_libraries(app_main PRIVATE stm32cubemx cjson PUBLIC lwpkt)
-target_include_directories(app_main PUBLIC ${cjson_SOURCE_DIR})

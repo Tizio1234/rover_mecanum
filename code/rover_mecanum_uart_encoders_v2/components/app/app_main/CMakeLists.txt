@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 3.22)
 
-set(SRCS
-    ${CMAKE_CURRENT_LIST_DIR}/app_main.c
-)
-
-set(INCLUDE_DIRS
-    ${CMAKE_CURRENT_LIST_DIR}/inc
-)
-
 project(app_main)
-add_library(${PROJECT_NAME} STATIC)
-target_sources(${PROJECT_NAME} PUBLIC ${SRCS})
-target_include_directories(${PROJECT_NAME} PUBLIC ${INCLUDE_DIRS})
+
+add_library(${PROJECT_NAME} STATIC
+    ${CMAKE_CURRENT_LIST_DIR}/src/app_main.c
+)
+
+target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc) # Public include directories
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src ${cjson_SOURCE_DIR}) # Private include directories
+
+target_link_libraries(${PROJECT_NAME} PUBLIC) # Public dependencies
+target_link_libraries(${PROJECT_NAME} PRIVATE stm32cubemx lwpkt cjson uart_rb) # Private dependencies
