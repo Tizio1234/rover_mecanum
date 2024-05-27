@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <usart.h>
+#include <gpio.h>
 #include <cmsis_os.h>
 
 #include <lwrb/lwrb.h>
@@ -19,25 +20,43 @@
 
 static lwpkt_t uart_rb_pkt;
 
+static uint8_t uart_rb_tx_rb_data[128], uart_rb_rx_rb_data[128];
+static uart_rb_t uart_rb = {0};
+
 static void pkt_evt_fn(lwpkt_t *pkt, lwpkt_evt_type_t evt_type){
     switch (evt_type)
     {
     case LWPKT_EVT_PKT:
-        printf("Got a valid packet: (%.*s)\r\n", lwpkt_get_data_len(pkt), (char*)lwpkt_get_data(pkt));
+        //printf("Got a valid packet: (%.*s)\r\n", lwpkt_get_data_len(pkt), (char*)lwpkt_get_data(pkt));
+        printf("p\r\n");
         break;
     case LWPKT_EVT_TIMEOUT:
-        printf("lwpkt evt timeout\r\n");
+        printf("timeout\r\n");
         break;
     }
 }
 
-static uint8_t uart_rb_tx_rb_data[128], uart_rb_rx_rb_data[128];
-static uart_rb_t uart_rb = {0};
+osSemaphoreId_t pkt_sem_id = NULL;
+osSemaphoreAttr_t pkt_sem_attr = {
+    .name = "pkt sem"
+};
+
+osThreadId_t pkt_thread_id = NULL;
+const osThreadAttr_t pkt_thread_attr = {
+    .name = "pkt thread",
+    .stack_size = 4 * 256,
+    .priority = osPriorityNormal
+};
+void pkt_thread_fun(void *param){
+    while (1)
+    {
+        while (lwrb_get_full(&uart_rb.rx_rb) > 0) lwpkt_process(&uart_rb_pkt, OS_TICKS_TO_MS(osKernelGetTickCount()));
+    }
+}
 
 static void uart_rx_evt_cb(UART_HandleTypeDef *huart, uint16_t Pos){
     if (huart->Instance == HUART.Instance)
     {
-        printf("rx\r\n");
         uart_rb_rx_evt_cb(&uart_rb, Pos);
     }
 }
@@ -49,7 +68,7 @@ static void uart_tx_tc_cb(UART_HandleTypeDef *huart){
     }
 }
 
-osThreadId_t app_main_thread_id;
+osThreadId_t app_main_thread_id = NULL;
 const osThreadAttr_t app_main_thread_attr = {
     .name = "app main thread",
     .stack_size = 4 * 256,
@@ -58,13 +77,15 @@ const osThreadAttr_t app_main_thread_attr = {
 void app_main_thread_fun(void *param){
     UNUSED(param);
 
+    pkt_thread_id = osThreadNew(pkt_thread_fun, NULL, &pkt_thread_attr);
+
     HAL_UART_RegisterRxEventCallback(&HUART, uart_rx_evt_cb);
     HAL_UART_RegisterCallback(&HUART, HAL_UART_TX_COMPLETE_CB_ID, uart_tx_tc_cb);
 
     uart_rb_init(&uart_rb, &HUART, uart_rb_rx_rb_data, sizeof(uart_rb_rx_rb_data), uart_rb_tx_rb_data, sizeof(uart_rb_tx_rb_data));
     uart_rb_start(&uart_rb);
 
-    lwpkt_init(&uart_rb_pkt, &uart_rb.tx_rb, &uart_rb.tx_rb);
+    lwpkt_init(&uart_rb_pkt, &uart_rb.tx_rb, &uart_rb.rx_rb);
     lwpkt_set_evt_fn(&uart_rb_pkt, pkt_evt_fn);
 
     while (1)
@@ -78,7 +99,6 @@ void app_main_thread_fun(void *param){
         else printf("size <= 0(%i)\r\n", size);
 
         osDelayUntil(start_ticks + OS_MS_TO_TICKS(1000));
-        lwpkt_process(&uart_rb_pkt, HAL_GetTick());
     }
 }
 

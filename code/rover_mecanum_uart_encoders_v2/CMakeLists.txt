@@ -78,22 +78,24 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/DaveGamble/cJSON.git
     GIT_TAG v1.7.18
 )
-FetchContent_MakeAvailable(cjson)
 
 FetchContent_Declare(
   lwrb
   GIT_REPOSITORY https://github.com/MaJerle/lwrb.git
-  GIT_TAG        b32c645 # Replace with the desired version
+  GIT_TAG        b32c645
 )
-FetchContent_MakeAvailable(lwrb)
 
-# Add ext components
 set(LWPKT_OPTS_FILE ${CMAKE_CURRENT_LIST_DIR}/components/app/app_main/inc/lwpkt_opts.h)
 FetchContent_Declare(
   lwpkt
   GIT_REPOSITORY https://github.com/MaJerle/lwpkt.git
-  GIT_TAG        6a82dab # Replace with the desired version
+  GIT_TAG        6a82dab
 )
+
+message("finished downloading libraries")
+
+FetchContent_MakeAvailable(cjson)
+FetchContent_MakeAvailable(lwrb)
 FetchContent_MakeAvailable(lwpkt)
 
 # Add app components
