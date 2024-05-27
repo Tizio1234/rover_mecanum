@@ -36,11 +36,6 @@ static void pkt_evt_fn(lwpkt_t *pkt, lwpkt_evt_type_t evt_type){
     }
 }
 
-osSemaphoreId_t pkt_sem_id = NULL;
-osSemaphoreAttr_t pkt_sem_attr = {
-    .name = "pkt sem"
-};
-
 static void uart_rx_evt_cb(UART_HandleTypeDef *huart, uint16_t Pos){
     if (huart->Instance == HUART.Instance)
     {
