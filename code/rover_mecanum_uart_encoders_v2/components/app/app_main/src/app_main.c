@@ -41,23 +41,11 @@ osSemaphoreAttr_t pkt_sem_attr = {
     .name = "pkt sem"
 };
 
-osThreadId_t pkt_thread_id = NULL;
-const osThreadAttr_t pkt_thread_attr = {
-    .name = "pkt thread",
-    .stack_size = 4 * 256,
-    .priority = osPriorityNormal
-};
-void pkt_thread_fun(void *param){
-    while (1)
-    {
-        while (lwrb_get_full(&uart_rb.rx_rb) > 0) lwpkt_process(&uart_rb_pkt, OS_TICKS_TO_MS(osKernelGetTickCount()));
-    }
-}
-
 static void uart_rx_evt_cb(UART_HandleTypeDef *huart, uint16_t Pos){
     if (huart->Instance == HUART.Instance)
     {
         uart_rb_rx_evt_cb(&uart_rb, Pos);
+        while (lwrb_get_full(&uart_rb.rx_rb) > 0) lwpkt_process(&uart_rb_pkt, OS_TICKS_TO_MS(osKernelGetTickCount()));
     }
 }
 
@@ -76,8 +64,6 @@ const osThreadAttr_t app_main_thread_attr = {
 };
 void app_main_thread_fun(void *param){
     UNUSED(param);
-
-    pkt_thread_id = osThreadNew(pkt_thread_fun, NULL, &pkt_thread_attr);
 
     HAL_UART_RegisterRxEventCallback(&HUART, uart_rx_evt_cb);
     HAL_UART_RegisterCallback(&HUART, HAL_UART_TX_COMPLETE_CB_ID, uart_tx_tc_cb);
