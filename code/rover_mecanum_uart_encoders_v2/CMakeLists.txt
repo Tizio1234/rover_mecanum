@@ -63,7 +63,6 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
-
     # Add user defined libraries
 )
 
@@ -92,17 +91,36 @@ FetchContent_Declare(
   GIT_TAG        6a82dab
 )
 
+FetchContent_Declare(
+  uart_rb
+  GIT_REPOSITORY https://github.com/Tizio1234/stm32_uart_rb.git
+  GIT_TAG main
+)
+
 message("finished downloading libraries")
 
 FetchContent_MakeAvailable(cjson)
 FetchContent_MakeAvailable(lwrb)
 FetchContent_MakeAvailable(lwpkt)
+FetchContent_MakeAvailable(uart_rb)
 
 # Add app components
 add_subdirectory(components/app/app_main)
-add_subdirectory(components/app/uart_rb)
+add_subdirectory(components/app/mecanum)
 
 #target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
+
+#get_target_property(stm32cubemx_wrap_COMPILE_DEFINITIONS stm32cubemx INTERFACE_COMPILE_DEFINITIONS)
+#get_target_property(stm32cubemx_wrap_INCLUDE_DIRECTORIES stm32cubemx INTERFACE_INCLUDE_DIRECTORIES)
+#get_target_property(stm32cubemx_wrap_SOURCES stm32cubemx INTERFACE_SOURCES)
+#get_target_property(stm32cubemx_wrap_LINK_DIRECTORIES stm32cubemx INTERFACE_LINK_DIRECTORIES)
+#get_target_property(stm32cubemx_wrap_LINK_LIBRARIES stm32cubemx INTERFACE_LINK_LIBRARIES)
+
+#add_library(stm32cubemx_wrap STATIC ${stm32cubemx_wrap_SOURCES})
+#target_compile_definitions(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_COMPILE_DEFINITIONS})
+#target_include_directories(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_INCLUDE_DIRECTORIES})
+#target_link_directories(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_LINK_DIRECTORIES})
+#target_link_libraries(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_LINK_LIBRARIES})
 
 target_link_libraries(stm32cubemx INTERFACE app_main)
 
