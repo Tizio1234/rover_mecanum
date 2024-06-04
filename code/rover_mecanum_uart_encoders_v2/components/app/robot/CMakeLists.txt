@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.22)
 project(mecanum)
 
 add_library(${PROJECT_NAME} STATIC
-    ${CMAKE_CURRENT_LIST_DIR}/src/mecanum.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/robot.c
 )
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc) # Public include directories

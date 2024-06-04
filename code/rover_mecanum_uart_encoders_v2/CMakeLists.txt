@@ -106,7 +106,7 @@ FetchContent_MakeAvailable(uart_rb)
 
 # Add app components
 add_subdirectory(components/app/app_main)
-add_subdirectory(components/app/mecanum)
+add_subdirectory(components/app/robot)
 
 #target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
 
