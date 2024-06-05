@@ -25,7 +25,7 @@
 	if (x != MOTOR_ERR_OK)           \
 	return ret
 
-motor_err_t motor_init(motor_t *motor, motor_config_t *config)
+motor_err_t motor_init(motor_t *motor, const motor_config_t *config)
 {
 	MOTOR_PARAM_CHECK(motor);
 	MOTOR_PARAM_CHECK(config);
@@ -136,7 +136,7 @@ robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor, motor_t *fr_
 	ROBOT_PARAM_CHECK(bl_motor);
 	ROBOT_PARAM_CHECK(br_motor);
 
-	if (!robot->state_.initialized)
+	if (robot->state_.initialized)
 		return ROBOT_ERR_INVALID_STATE;
 
 	motor_state_t state;
@@ -210,6 +210,8 @@ robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power, float thet
 
 	if (power < 0.0f || power > 1.0f)
 		return ROBOT_ERR_INVALID_ARG;
+	
+	if (power == 0.0f && turn == 0.0f) return frwd_robot_stop(robot);
 
 	float sine = sinf(theta - M_PI_4);
 	float cosine = cosf(theta - M_PI_4);
@@ -233,6 +235,11 @@ robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power, float thet
 		bl /= x;
 		br /= x;
 	}
+
+	MOTOR_CHECK_WITH_RET(motor_run(robot->fl_motor_, fl), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_run(robot->fr_motor_, fr), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_run(robot->bl_motor_, bl), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_run(robot->br_motor_, br), ROBOT_ERR_MOTOR);
 
 	robot->state_.running = true;
 

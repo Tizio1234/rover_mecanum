@@ -61,6 +61,7 @@ void Error_Handler(void);
 #define TIM1_PERIOD 8400
 #define B1_Pin GPIO_PIN_13
 #define B1_GPIO_Port GPIOC
+#define B1_EXTI_IRQn EXTI15_10_IRQn
 #define FL_MOTOR_A_Pin GPIO_PIN_0
 #define FL_MOTOR_A_GPIO_Port GPIOC
 #define FL_MOTOR_B_Pin GPIO_PIN_1
@@ -101,10 +102,10 @@ void Error_Handler(void);
 #define TMS_GPIO_Port GPIOA
 #define TCK_Pin GPIO_PIN_14
 #define TCK_GPIO_Port GPIOA
-#define BL_MOOR_B_Pin GPIO_PIN_10
-#define BL_MOOR_B_GPIO_Port GPIOC
-#define BR_MOTRO_A_Pin GPIO_PIN_11
-#define BR_MOTRO_A_GPIO_Port GPIOC
+#define BL_MOTOR_B_Pin GPIO_PIN_10
+#define BL_MOTOR_B_GPIO_Port GPIOC
+#define BR_MOTOR_A_Pin GPIO_PIN_11
+#define BR_MOTOR_A_GPIO_Port GPIOC
 #define BR_MOTOR_B_Pin GPIO_PIN_12
 #define BR_MOTOR_B_GPIO_Port GPIOC
 #define FL_ENCODER_B_Pin GPIO_PIN_3

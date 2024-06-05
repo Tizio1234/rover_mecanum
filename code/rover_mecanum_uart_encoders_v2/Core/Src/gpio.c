@@ -52,7 +52,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, FL_MOTOR_A_Pin|FL_MOTOR_B_Pin|FR_MOTOR_A_Pin|FR_MOTOR_B_Pin
-                          |BL_MOTOR_A_Pin|BL_MOOR_B_Pin|BR_MOTRO_A_Pin|BR_MOTOR_B_Pin, GPIO_PIN_RESET);
+                          |BL_MOTOR_A_Pin|BL_MOTOR_B_Pin|BR_MOTOR_A_Pin|BR_MOTOR_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : PtPin */
   GPIO_InitStruct.Pin = B1_Pin;
@@ -63,11 +63,15 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : PCPin PCPin PCPin PCPin
                            PCPin PCPin PCPin PCPin */
   GPIO_InitStruct.Pin = FL_MOTOR_A_Pin|FL_MOTOR_B_Pin|FR_MOTOR_A_Pin|FR_MOTOR_B_Pin
-                          |BL_MOTOR_A_Pin|BL_MOOR_B_Pin|BR_MOTRO_A_Pin|BR_MOTOR_B_Pin;
+                          |BL_MOTOR_A_Pin|BL_MOTOR_B_Pin|BR_MOTOR_A_Pin|BR_MOTOR_B_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 

@@ -47,7 +47,7 @@ typedef enum
  * @brief Initializes the motor
  * @retval None
  */
-motor_err_t motor_init(motor_t *motor, motor_config_t *config);
+motor_err_t motor_init(motor_t *motor, const motor_config_t *config);
 
 /**
  * @brief Deinitializes the motor
@@ -108,19 +108,19 @@ typedef enum
  * @param bl_motor pointer to bl motor instance
  * @param br_motor pointer to br motor instance
  */
-robot_err_t frwd_robot_init(frwd_robot_t *mecanum_robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor);
+robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor);
 
 /**
  * @brief Deinit a fwrd robot
  * @param mecanum_robot pointer to fwrd robot instance
  */
-robot_err_t frwd_robot_deinit(frwd_robot_t *mecanum_robot);
+robot_err_t frwd_robot_deinit(frwd_robot_t *robot);
 
 /**
  * @brief Stop the fwrd motor
  * @param mecanum_robot pointer to fwrd robot instance
  */
-robot_err_t frwd_robot_stop(frwd_robot_t *mecanum_robot);
+robot_err_t frwd_robot_stop(frwd_robot_t *robot);
 
 /**
  * @brief Move a fwrd robot in a mecanum way
@@ -130,6 +130,6 @@ robot_err_t frwd_robot_stop(frwd_robot_t *mecanum_robot);
  * @param theta theta of the vector in radians
  * @param turn angular speed, a good value should be between -0.2 and +0.2
  */
-robot_err_t frwd_robot_mecanum_move(frwd_robot_t *mecanum_robot, float power, float theta, float turn);
+robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power, float theta, float turn);
 
 #endif /* ROBOT_H_ */
