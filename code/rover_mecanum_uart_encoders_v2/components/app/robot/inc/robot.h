@@ -79,7 +79,7 @@ typedef struct
 {
 	bool initialized;
 	bool running;	
-} frwd_robot_state_t;
+} robot_state_t;
 
 typedef struct
 {
@@ -88,6 +88,7 @@ typedef struct
 	motor_t *bl_motor_;
 	motor_t *br_motor_;
 
+	robot_state_t state_;
 } frwd_robot_t;
 
 typedef enum
@@ -95,8 +96,9 @@ typedef enum
 	ROBOT_ERR_OK = 0,
 	ROBOT_ERR_FAIL,
 	ROBOT_ERR_INVALID_STATE,
-	ROBOT_ERR_INVALID_ARG
-} frwd_robot_err_t;
+	ROBOT_ERR_INVALID_ARG,
+	ROBOT_ERR_MOTOR
+} robot_err_t;
 
 /**
  * @brief Init a frwd robot, motors must be already initialized
@@ -106,28 +108,28 @@ typedef enum
  * @param bl_motor pointer to bl motor instance
  * @param br_motor pointer to br motor instance
  */
-frwd_robot_err_t frwd_robot_init(frwd_robot_t *mecanum_robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor);
+robot_err_t frwd_robot_init(frwd_robot_t *mecanum_robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor);
 
 /**
  * @brief Deinit a fwrd robot
  * @param mecanum_robot pointer to fwrd robot instance
  */
-frwd_robot_err_t frwd_robot_deinit(frwd_robot_t *mecanum_robot);
+robot_err_t frwd_robot_deinit(frwd_robot_t *mecanum_robot);
 
 /**
  * @brief Stop the fwrd motor
  * @param mecanum_robot pointer to fwrd robot instance
  */
-frwd_robot_err_t frwd_robot_stop(frwd_robot_t *mecanum_robot);
+robot_err_t frwd_robot_stop(frwd_robot_t *mecanum_robot);
 
 /**
  * @brief Move a fwrd robot in a mecanum way
  * @paragraph This function takes a vector and an angular speed
  * @param mecanum_robot pointer to fwrd robot instance
  * @param power r of the vector, must be between 0.0 and 1.0
- * @param theta theta of the vector
- * @param angular_speed angular speed, a good value should be between -0.2 and +0.2
+ * @param theta theta of the vector in radians
+ * @param turn angular speed, a good value should be between -0.2 and +0.2
  */
-frwd_robot_err_t frwd_robot_mecanum_move(frwd_robot_t *mecanum_robot, float power, float theta, float angular_speed);
+robot_err_t frwd_robot_mecanum_move(frwd_robot_t *mecanum_robot, float power, float theta, float turn);
 
 #endif /* ROBOT_H_ */

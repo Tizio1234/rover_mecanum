@@ -18,6 +18,13 @@
 	if (p == NULL)           \
 	return MOTOR_ERR_INVALID_ARG
 
+#define MOTOR_CHECK(x)     \
+	if (x != MOTOR_ERR_OK) \
+	return x
+#define MOTOR_CHECK_WITH_RET(x, ret) \
+	if (x != MOTOR_ERR_OK)           \
+	return ret
+
 motor_err_t motor_init(motor_t *motor, motor_config_t *config)
 {
 	MOTOR_PARAM_CHECK(motor);
@@ -30,7 +37,7 @@ motor_err_t motor_init(motor_t *motor, motor_config_t *config)
 
 	motor->state_.initialized = true;
 
-	motor_update_autoreload(motor);
+	MOTOR_CHECK(motor_update_autoreload(motor));
 
 	return MOTOR_ERR_OK;
 }
@@ -94,7 +101,7 @@ motor_err_t motor_run(motor_t *motor, float power)
 	}
 	else
 	{
-		motor_stop(motor);
+		MOTOR_CHECK(motor_stop(motor));
 	}
 
 	if (!motor->state_.running)
@@ -113,12 +120,15 @@ motor_err_t motor_get_state(motor_t *motor, motor_state_t *state)
 	return MOTOR_ERR_OK;
 }
 
+#define ROBOT_PARAM_CHECK(p) \
+	if (p == NULL)           \
+	return ROBOT_ERR_INVALID_ARG
 
-#define ROBOT_PARAM_CHECK(p) if (p == NULL) return ROBOT_ERR_INVALID_ARG
+#define ROBOT_EQUAL_CHECK(a, b) \
+	if (a != b)                 \
+	return ROBOT_ERR_FAIL
 
-#define ROBOT_EQUAL_CHECK(a, b) if (a != b) return ROBOT_ERR_FAIL
-
-frwd_robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor)
+robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor)
 {
 	ROBOT_PARAM_CHECK(robot);
 	ROBOT_PARAM_CHECK(fl_motor);
@@ -126,25 +136,105 @@ frwd_robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor, motor_t
 	ROBOT_PARAM_CHECK(bl_motor);
 	ROBOT_PARAM_CHECK(br_motor);
 
+	if (!robot->state_.initialized)
+		return ROBOT_ERR_INVALID_STATE;
+
+	motor_state_t state;
+
+	MOTOR_CHECK_WITH_RET(motor_get_state(fl_motor, &state), ROBOT_ERR_MOTOR);
+	if (!state.initialized)
+		return ROBOT_ERR_MOTOR;
+	MOTOR_CHECK_WITH_RET(motor_get_state(fr_motor, &state), ROBOT_ERR_MOTOR);
+	if (!state.initialized)
+		return ROBOT_ERR_MOTOR;
+	MOTOR_CHECK_WITH_RET(motor_get_state(bl_motor, &state), ROBOT_ERR_MOTOR);
+	if (!state.initialized)
+		return ROBOT_ERR_MOTOR;
+	MOTOR_CHECK_WITH_RET(motor_get_state(br_motor, &state), ROBOT_ERR_MOTOR);
+	if (!state.initialized)
+		return ROBOT_ERR_MOTOR;
+
 	robot->fl_motor_ = fl_motor;
 	robot->fr_motor_ = fr_motor;
 	robot->bl_motor_ = bl_motor;
 	robot->br_motor_ = br_motor;
 
+	MOTOR_CHECK_WITH_RET(motor_stop(fl_motor), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(fr_motor), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(bl_motor), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(br_motor), ROBOT_ERR_MOTOR);
+
+	robot->state_.initialized = true;
+
 	return ROBOT_ERR_OK;
 }
 
-frwd_robot_err_t frwd_robot_deinit(frwd_robot_t *robot)
+robot_err_t frwd_robot_deinit(frwd_robot_t *robot)
 {
+	ROBOT_PARAM_CHECK(robot);
+
+	if (!robot->state_.initialized)
+		return MOTOR_ERR_INVALID_STATE;
+
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->fl_motor_), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->fr_motor_), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->bl_motor_), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->br_motor_), ROBOT_ERR_MOTOR);
+
+	robot->state_.initialized = false;
+
 	return ROBOT_ERR_OK;
 }
 
-frwd_robot_err_t frwd_robot_stop(frwd_robot_t *robot)
+robot_err_t frwd_robot_stop(frwd_robot_t *robot)
 {
+	ROBOT_PARAM_CHECK(robot);
+
+	if (!robot->state_.initialized)
+		return MOTOR_ERR_INVALID_STATE;
+
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->fl_motor_), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->fr_motor_), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->bl_motor_), ROBOT_ERR_MOTOR);
+	MOTOR_CHECK_WITH_RET(motor_stop(robot->br_motor_), ROBOT_ERR_MOTOR);
+
 	return ROBOT_ERR_OK;
 }
 
-frwd_robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power, float theta, float angular_speed)
+robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power, float theta, float turn)
 {
+	ROBOT_PARAM_CHECK(robot);
+
+	if (!robot->state_.initialized)
+		return MOTOR_ERR_INVALID_STATE;
+
+	if (power < 0.0f || power > 1.0f)
+		return ROBOT_ERR_INVALID_ARG;
+
+	float sine = sinf(theta - M_PI_4);
+	float cosine = cosf(theta - M_PI_4);
+
+	float maximum = fmaxf(sine, cosine);
+
+	sine /= maximum;
+	cosine /= maximum;
+
+	float fl = power * cosine + turn;
+	float fr = power * sine - turn;
+	float bl = power * sine + turn;
+	float br = power * cosine - turn;
+
+	float x = power + fabsf(turn);
+
+	if (x > 1.0f)
+	{
+		fl /= x;
+		fr /= x;
+		bl /= x;
+		br /= x;
+	}
+
+	robot->state_.running = true;
+
 	return ROBOT_ERR_OK;
 }
