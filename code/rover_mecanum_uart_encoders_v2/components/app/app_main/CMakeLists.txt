@@ -10,4 +10,4 @@ target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_LIST_DIR}/inc)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src ${cjson_SOURCE_DIR}) # Private include directories
 
 target_link_libraries(${PROJECT_NAME} PUBLIC) # Public dependencies
-target_link_libraries(${PROJECT_NAME} PRIVATE stm32cubemx lwpkt cjson uart_rb robot) # Private dependencies
+target_link_libraries(${PROJECT_NAME} PRIVATE stm32cubemx_static lwpkt cjson uart_rb robot) # Private dependencies

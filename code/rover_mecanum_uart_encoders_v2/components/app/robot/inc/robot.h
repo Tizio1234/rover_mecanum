@@ -12,8 +12,7 @@
 
 #include <tim.h>
 
-typedef struct
-{
+typedef struct {
 	GPIO_TypeDef *dir_pin_1_port;
 	uint16_t dir_pin_1;
 	GPIO_TypeDef *dir_pin_2_port;
@@ -22,21 +21,18 @@ typedef struct
 	uint16_t channel;
 } motor_config_t;
 
-typedef struct
-{
+typedef struct {
 	bool initialized;
 	bool running;
 } motor_state_t;
 
-typedef struct
-{
+typedef struct {
 	motor_config_t config_;
 	motor_state_t state_;
 	float autoreload_;
 } motor_t;
 
-typedef enum
-{
+typedef enum _motor_err {
 	MOTOR_ERR_OK = 0,
 	MOTOR_ERR_FAIL,
 	MOTOR_ERR_INVALID_STATE,
@@ -75,14 +71,12 @@ motor_err_t motor_run(motor_t *motor, float power);
  */
 motor_err_t motor_get_state(motor_t *motor, motor_state_t *state);
 
-typedef struct
-{
+typedef struct {
 	bool initialized;
-	bool running;	
+	bool running;
 } robot_state_t;
 
-typedef struct
-{
+typedef struct {
 	motor_t *fl_motor_;
 	motor_t *fr_motor_;
 	motor_t *bl_motor_;
@@ -91,8 +85,7 @@ typedef struct
 	robot_state_t state_;
 } frwd_robot_t;
 
-typedef enum
-{
+typedef enum {
 	ROBOT_ERR_OK = 0,
 	ROBOT_ERR_FAIL,
 	ROBOT_ERR_INVALID_STATE,
@@ -108,7 +101,9 @@ typedef enum
  * @param bl_motor pointer to bl motor instance
  * @param br_motor pointer to br motor instance
  */
-robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor, motor_t *fr_motor, motor_t *bl_motor, motor_t *br_motor);
+robot_err_t frwd_robot_init(frwd_robot_t *robot, motor_t *fl_motor,
+			    motor_t *fr_motor, motor_t *bl_motor,
+			    motor_t *br_motor);
 
 /**
  * @brief Deinit a fwrd robot
@@ -130,6 +125,7 @@ robot_err_t frwd_robot_stop(frwd_robot_t *robot);
  * @param theta theta of the vector in radians
  * @param turn angular speed, a good value should be between -0.2 and +0.2
  */
-robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power, float theta, float turn);
+robot_err_t frwd_robot_mecanum_move(frwd_robot_t *robot, float power,
+				    float theta, float turn);
 
 #endif /* ROBOT_H_ */

@@ -49,10 +49,8 @@ HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority)
 
   /* Enable TIM11 clock */
   __HAL_RCC_TIM11_CLK_ENABLE();
-
   /* Get clock configuration */
   HAL_RCC_GetClockConfig(&clkconfig, &pFLatency);
-
   /* Compute TIM11 clock */
       uwTimclock = HAL_RCC_GetPCLK2Freq();
 

@@ -66,6 +66,14 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    main/entry.c
+)
+
+target_link_libraries(${CMAKE_PROJECT_NAME}
+    app_main
+)
+
 message("Downloading required libraries(cjson, lwpkt, lwrb), it can take some time")
 
 include(FetchContent)
@@ -97,33 +105,37 @@ FetchContent_Declare(
   GIT_TAG main
 )
 
-message("finished downloading libraries")
-
 FetchContent_MakeAvailable(cjson)
 FetchContent_MakeAvailable(lwrb)
 FetchContent_MakeAvailable(lwpkt)
 FetchContent_MakeAvailable(uart_rb)
 
+message("finished downloading libraries")
+
+target_link_libraries(lwpkt INTERFACE lwrb)
+
 # Add app components
 add_subdirectory(components/app/app_main)
 add_subdirectory(components/app/robot)
 
-#target_compile_definitions(lwrb INTERFACE LWRB_DISABLE_ATOMIC) # lwrb cpp support
+get_target_property(STM32_SOURCES stm32cubemx INTERFACE_SOURCES)
+get_target_property(STM32_INCLUDE_DIRS stm32cubemx INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(STM32_COMPILE_DEFINITIONS stm32cubemx INTERFACE_COMPILE_DEFINITIONS)
+#get_target_property(STM32_LINK_DIRECTORIES stm32cubemx INTERFACE_LINK_DIRECTORIES)
+#get_target_property(STM32_LINK_LIBRARIES stm32cubemx INTERFACE_LINK_LIBRARIES)
 
-#get_target_property(stm32cubemx_wrap_COMPILE_DEFINITIONS stm32cubemx INTERFACE_COMPILE_DEFINITIONS)
-#get_target_property(stm32cubemx_wrap_INCLUDE_DIRECTORIES stm32cubemx INTERFACE_INCLUDE_DIRECTORIES)
-#get_target_property(stm32cubemx_wrap_SOURCES stm32cubemx INTERFACE_SOURCES)
-#get_target_property(stm32cubemx_wrap_LINK_DIRECTORIES stm32cubemx INTERFACE_LINK_DIRECTORIES)
-#get_target_property(stm32cubemx_wrap_LINK_LIBRARIES stm32cubemx INTERFACE_LINK_LIBRARIES)
+add_library(stm32cubemx_static STATIC
+    ${STM32_SOURCES}
+)
 
-#add_library(stm32cubemx_wrap STATIC ${stm32cubemx_wrap_SOURCES})
-#target_compile_definitions(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_COMPILE_DEFINITIONS})
-#target_include_directories(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_INCLUDE_DIRECTORIES})
-#target_link_directories(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_LINK_DIRECTORIES})
-#target_link_libraries(stm32cubemx_wrap PUBLIC ${stm32cubemx_wrap_LINK_LIBRARIES})
+target_include_directories(stm32cubemx_static PUBLIC
+    ${STM32_INCLUDE_DIRS}
+)
 
-target_link_libraries(stm32cubemx INTERFACE app_main)
+target_compile_definitions(stm32cubemx_static PUBLIC
+    ${STM32_COMPILE_DEFINITIONS}
+)
 
-target_link_libraries(lwpkt INTERFACE lwrb)
-
-target_link_libraries(uart_rb PUBLIC stm32cubemx)
+target_link_libraries(uart_rb PUBLIC
+    stm32cubemx_static
+)
