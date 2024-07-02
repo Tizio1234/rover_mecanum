@@ -125,3 +125,5 @@ add_subdirectory(components/app/robot)
 target_link_libraries(stm32cubemx INTERFACE app_main)
 
 target_link_libraries(lwpkt INTERFACE lwrb)
+
+target_link_libraries(uart_rb PUBLIC stm32cubemx)
