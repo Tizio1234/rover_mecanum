@@ -7,6 +7,8 @@
 
 #include "app_main.h"
 
+#include "stdio.h"
+
 extern void SystemClock_Config(void);
 
 /**
@@ -45,8 +47,9 @@ int main(void)
 	/* We should never get here as control is now taken by the scheduler */
 
 	/* Infinite loop */
-	while (1) {
-	}
+	printf("Control should have never got here, there is a serious issue, going inside error handler\r\n");
+	Error_Handler();
+	while (1);
 }
 
 int _write(int file, char *ptr, int len)

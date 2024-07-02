@@ -93,8 +93,6 @@ static const motor_config_t br_motor_config = {
 	.dir_pin_2 = BR_MOTOR_B_GPIO_PORT
 };
 
-static const cJSON_Hooks hooks = { .free_fn = free, .malloc_fn = malloc };
-
 static motor_t fl_motor;
 static motor_t fr_motor;
 static motor_t bl_motor;
@@ -146,7 +144,7 @@ void app_main_thread_fun(void *param)
 {
 	UNUSED(param);
 
-	cJSON_InitHooks(&hooks);
+	cJSON_InitHooks(NULL);
 
 	robot_sem_id = osSemaphoreNew(1, 1, &robot_sem_attr);
 	robot_safety_stop_timer_id = osTimerNew(robot_safety_stop_timer_fun,

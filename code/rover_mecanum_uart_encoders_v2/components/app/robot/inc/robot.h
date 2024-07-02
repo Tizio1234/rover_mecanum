@@ -41,13 +41,11 @@ typedef enum _motor_err {
 
 /**
  * @brief Initializes the motor
- * @retval None
  */
 motor_err_t motor_init(motor_t *motor, const motor_config_t *config);
 
 /**
  * @brief Deinitializes the motor
- * @retval None
  */
 motor_err_t motor_deinit(motor_t *motor);
 
@@ -55,7 +53,6 @@ motor_err_t motor_update_autoreload(motor_t *motor);
 
 /**
  * @brief Stops the motor, if motor is already stopped, it will return ok anyway
- * @retval None
  */
 motor_err_t motor_stop(motor_t *motor);
 
