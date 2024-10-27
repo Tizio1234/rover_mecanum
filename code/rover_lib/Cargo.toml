@@ -1,0 +1,12 @@
+[package]
+name = "rover_lib"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+embedded-hal = "1.0.0"
+
+[dependencies.uom]
+version = "0.36.0"
+default-features = false
+features = ["f32", "autoconvert", "si", "serde"]
