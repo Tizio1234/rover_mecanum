@@ -1,6 +1,6 @@
 #![no_std]
 
-use embedded_hal::{
+use embedded_hal_1::{
     digital::{OutputPin, PinState},
     pwm::SetDutyCycle,
 };
@@ -24,16 +24,16 @@ pub trait MecanumRobot {
     fn drive(&mut self, power: u8, theta: Angle, turn: i8) -> Result<(), Self::Error>;
 }
 
-pub struct MyMotor<P: SetDutyCycle, O: OutputPin> {
+pub struct MyMotor<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> {
     pwm: P,
-    dir_0: O,
-    dir_1: O,
+    dir_0: O0,
+    dir_1: O1,
     dir_active: PinState,
     dir_passive: PinState,
 }
 
-impl<P: SetDutyCycle, O: OutputPin> MyMotor<P, O> {
-    pub fn new(pwm: P, dir_0: O, dir_1: O, dir_active: PinState, dir_passive: PinState) -> Self {
+impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> MyMotor<P, O0, O1> {
+    pub fn new(pwm: P, dir_0: O0, dir_1: O1, dir_active: PinState, dir_passive: PinState) -> Self {
         Self {
             pwm,
             dir_0,
@@ -44,7 +44,7 @@ impl<P: SetDutyCycle, O: OutputPin> MyMotor<P, O> {
     }
 }
 
-impl<P: SetDutyCycle, O: OutputPin> Motor for MyMotor<P, O> {
+impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1> {
     type Error = ();
 
     fn drive(&mut self, power: u8, dir: Direction) -> Result<(), Self::Error> {
@@ -52,7 +52,7 @@ impl<P: SetDutyCycle, O: OutputPin> Motor for MyMotor<P, O> {
             Direction::ClockWise => (self.dir_active, self.dir_passive),
             Direction::AntiClockWise => (self.dir_passive, self.dir_active),
         };
-        
+
         self.dir_0.set_state(dir_0).map_err(|_| ())?;
         self.dir_1.set_state(dir_1).map_err(|_| ())?;
         self.pwm

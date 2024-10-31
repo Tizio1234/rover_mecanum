@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-embedded-hal = "1.0.0"
+embedded-hal-02 = { package = "embedded-hal", version = "0.2.7" }
+embedded-hal-1 = { package = "embedded-hal", version = "1.0" }
 
 [dependencies.uom]
 version = "0.36.0"
