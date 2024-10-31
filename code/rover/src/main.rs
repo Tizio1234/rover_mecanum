@@ -84,35 +84,38 @@ async fn main(_spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
     let mut led = Output::new(p.PA5, Level::High, Speed::Low);
 
-    let ch1_pin = simple_pwm::PwmPin::new_ch1(p.PA6, OutputType::PushPull);
-    let ch2_pin = simple_pwm::PwmPin::new_ch2(p.PA7, OutputType::PushPull);
+    let ch1_pin = simple_pwm::PwmPin::new_ch1(p.PA8, OutputType::PushPull);
+    let ch2_pin = simple_pwm::PwmPin::new_ch2(p.PA9, OutputType::PushPull);
+    let ch3_pin = simple_pwm::PwmPin::new_ch3(p.PA10, OutputType::PushPull);
+    let ch4_pin = simple_pwm::PwmPin::new_ch4(p.PA11, OutputType::PushPull);
     let pwm = RefCell::new(simple_pwm::SimplePwm::new(
-        p.TIM3,
+        p.TIM1,
         Some(ch1_pin),
         Some(ch2_pin),
-        None,
-        None,
+        Some(ch3_pin),
+        Some(ch4_pin),
         khz(1),
         Default::default(),
     ));
 
     let mut ch1 = PwmWrapper::new(&pwm, embassy_stm32::timer::Channel::Ch1);
-    let mut ch2 = PwmWrapper::new(&pwm, embassy_stm32::timer::Channel::Ch2);
+    // let mut ch2 = PwmWrapper::new(&pwm, embassy_stm32::timer::Channel::Ch2);
 
     ch1.enable();
 
     let dir_0 = Output::new(p.PB4, Level::Low, Speed::Low);
     let dir_1 = Output::new(p.PB5, Level::Low, Speed::Low);
 
-    let mut motor = MyMotor::new(ch1, dir_0, dir_1, embedded_hal_1::digital::PinState::High, embedded_hal_1::digital::PinState::Low);
-
-    motor.drive(128, rover_lib::Direction::ClockWise).unwrap();
+    let mut motor = MyMotor::new(ch1, dir_0, dir_1, embedded_hal_1::digital::PinState::High);
 
     loop {
         info!("Hello, World!");
         led.set_high();
+        motor.drive(128, rover_lib::Direction::Clockwise).unwrap();
         Timer::after(Duration::from_millis(500)).await;
+
         led.set_low();
+        motor.drive(192, rover_lib::Direction::CounterClockwise).unwrap();
         Timer::after(Duration::from_millis(500)).await;
     }
 }
