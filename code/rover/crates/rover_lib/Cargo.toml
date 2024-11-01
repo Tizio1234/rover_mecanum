@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 embedded-hal-02 = { workspace = true }
 embedded-hal-1 = { workspace = true }
+libm = { workspace = true }
 
 [dependencies.uom]
 version = "0.36.0"

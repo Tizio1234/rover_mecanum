@@ -4,7 +4,7 @@ use embedded_hal_1::{
 };
 // use uom::si::f32::Angle;
 
-use crate::iface::{Direction, Motor};
+use crate::iface::{Motor, DrivePower};
 
 pub struct MyMotor<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> {
     pwm: P,
@@ -42,10 +42,13 @@ impl Opposite for PinState {
 impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1> {
     type Error = ();
 
-    fn drive(&mut self, power: u8, dir: Direction) -> Result<(), Self::Error> {
-        let dirs = match dir {
-            Direction::Clockwise => (self.dir_active, self.dir_passive),
-            Direction::CounterClockwise => (self.dir_passive, self.dir_active),
+    fn drive(&mut self, power: DrivePower) -> Result<(), Self::Error> {
+        let power = power.inner();
+
+        let dirs = if power >= 0.0 {
+            (self.dir_active, self.dir_passive)
+        } else {
+            (self.dir_passive, self.dir_active)
         };
 
         self.dir_0.set_state(dirs.0).map_err(|_| ())?;
@@ -62,5 +65,18 @@ impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1>
         self.dir_1.set_state(self.dir_passive).map_err(|_| ())?;
 
         Ok(())
+    }
+}
+
+pub struct MyFourWheelRobot<M: Motor> {
+    fl: M,
+    fr: M,
+    bl: M,
+    br: M,
+}
+
+impl<M: Motor> MyFourWheelRobot<M> {
+    pub fn new(fl: M, fr: M, bl: M, br: M) -> Self {
+        Self { fl, fr, bl, br }
     }
 }
