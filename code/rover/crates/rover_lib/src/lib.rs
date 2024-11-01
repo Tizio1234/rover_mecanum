@@ -6,7 +6,9 @@ use embedded_hal_1::{
 };
 // use uom::si::f32::Angle;
 
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Direction {
+    #[default]
     Clockwise,
     CounterClockwise,
 }
