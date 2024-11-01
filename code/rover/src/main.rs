@@ -20,7 +20,7 @@ use embassy_time::{Duration, Timer};
 use embedded_hal_02::PwmPin;
 use fmt::info;
 
-use rover_lib::{self as _, Motor, MyMotor};
+use rover_lib::{Motor, MyMotor};
 
 struct PwmWrapper<'a, C, T, D, P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>> {
     pwm: &'a RefCell<P>,
@@ -115,7 +115,9 @@ async fn main(_spawner: Spawner) {
         Timer::after(Duration::from_millis(500)).await;
 
         led.set_low();
-        motor.drive(192, rover_lib::Direction::CounterClockwise).unwrap();
+        motor
+            .drive(192, rover_lib::Direction::CounterClockwise)
+            .unwrap();
         Timer::after(Duration::from_millis(500)).await;
     }
 }
