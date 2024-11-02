@@ -4,28 +4,15 @@ use embedded_hal_1::{
 };
 // use uom::si::f32::Angle;
 
-use crate::iface::{Motor, DrivePower};
+use crate::iface::{DrivePower, FourWheeledRobot, Motor};
 
-pub struct MyMotor<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> {
+pub struct MyMotor<P, O0, O1> {
     pwm: P,
     dir_0: O0,
     dir_1: O1,
     dir_active: PinState,
     dir_passive: PinState,
 }
-
-impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> MyMotor<P, O0, O1> {
-    pub fn new(pwm: P, dir_0: O0, dir_1: O1, dir_active: PinState) -> Self {
-        Self {
-            pwm,
-            dir_0,
-            dir_1,
-            dir_active,
-            dir_passive: dir_active.opposite(),
-        }
-    }
-}
-
 trait Opposite {
     fn opposite(&self) -> Self;
 }
@@ -38,6 +25,19 @@ impl Opposite for PinState {
         }
     }
 }
+
+impl<P, O0, O1> MyMotor<P, O0, O1> {
+    pub fn new(pwm: P, dir_0: O0, dir_1: O1, dir_active: PinState) -> Self {
+        Self {
+            pwm,
+            dir_0,
+            dir_1,
+            dir_active,
+            dir_passive: dir_active.opposite(),
+        }
+    }
+}
+
 
 impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1> {
     type Error = ();
@@ -68,15 +68,42 @@ impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1>
     }
 }
 
-pub struct MyFourWheelRobot<M: Motor> {
-    fl: M,
-    fr: M,
-    bl: M,
-    br: M,
+pub struct MyFourWheelRobot<FL, FR, BL, BR> {
+    fl: FL,
+    fr: FR,
+    bl: BL,
+    br: BR,
 }
 
-impl<M: Motor> MyFourWheelRobot<M> {
-    pub fn new(fl: M, fr: M, bl: M, br: M) -> Self {
+impl<FL, FR, BL, BR> MyFourWheelRobot<FL, FR, BL, BR> {
+    pub fn new(fl: FL, fr: FR, bl: BL, br: BR) -> Self {
         Self { fl, fr, bl, br }
+    }
+}
+
+impl<FL: Motor, FR: Motor, BL: Motor, BR: Motor> FourWheeledRobot for MyFourWheelRobot<FL, FR, BL, BR> {
+    type Error = ();
+
+    fn drive(
+        &mut self,
+        fl: DrivePower,
+        fr: DrivePower,
+        bl: DrivePower,
+        br: DrivePower,
+    ) -> Result<(), Self::Error> {
+        self.fl.drive(fl).map_err(|_| ())?;
+        self.fr.drive(fr).map_err(|_| ())?;
+        self.bl.drive(bl).map_err(|_| ())?;
+        self.br.drive(br).map_err(|_| ())?;
+
+        Ok(())
+    }
+    fn neutral(&mut self) -> Result<(), Self::Error> {
+        self.fl.neutral().map_err(|_|())?;
+        self.fr.neutral().map_err(|_|())?;
+        self.bl.neutral().map_err(|_|())?;
+        self.br.neutral().map_err(|_|())?;
+
+        Ok(())
     }
 }

@@ -7,7 +7,7 @@ impl DrivePower {
     pub const MIN: f32 = -1.0;
 
     pub fn new(inner: f32) -> Self {
-        Self(inner.clamp(-1.0, 1.0))
+        Self(inner.clamp(Self::MIN, Self::MAX))
     }
 
     pub fn inner(&self) -> f32 {
@@ -25,7 +25,13 @@ pub trait Motor {
 pub trait FourWheeledRobot {
     type Error;
 
-    fn drive(&mut self, fl: DrivePower, fr: DrivePower, bl: DrivePower, br: DrivePower) -> Result<(), Self::Error>;
+    fn drive(
+        &mut self,
+        fl: DrivePower,
+        fr: DrivePower,
+        bl: DrivePower,
+        br: DrivePower,
+    ) -> Result<(), Self::Error>;
     fn neutral(&mut self) -> Result<(), Self::Error>;
 }
 
@@ -36,7 +42,7 @@ impl Turn {
     pub const MIN: f32 = -1.0;
 
     pub fn new(turn: f32) -> Self {
-        Self(turn.clamp(-1.0, 1.0))
+        Self(turn.clamp(Self::MIN, Self::MAX))
     }
 
     pub fn inner(&self) -> f32 {
@@ -47,14 +53,26 @@ impl Turn {
 pub trait MecanumRobot: FourWheeledRobot {
     type Error;
 
-    fn drive(&mut self, power: DrivePower, theta: Angle, turn: Turn) -> Result<(), <Self as MecanumRobot>::Error>;
+    fn drive(
+        &mut self,
+        power: DrivePower,
+        theta: Angle,
+        turn: Turn,
+    ) -> Result<(), <Self as MecanumRobot>::Error>;
 }
 
-impl<T: FourWheeledRobot> MecanumRobot for T
+impl<T> MecanumRobot for T
+where
+    T: FourWheeledRobot,
 {
     type Error = T::Error;
 
-    fn drive(&mut self, power: DrivePower, theta: Angle, turn: Turn) -> Result<(), <Self as MecanumRobot>::Error> {
+    fn drive(
+        &mut self,
+        power: DrivePower,
+        theta: Angle,
+        turn: Turn,
+    ) -> Result<(), <Self as MecanumRobot>::Error> {
         let power = power.inner();
         let theta = theta.get::<uom::si::angle::radian>() - core::f32::consts::FRAC_PI_4;
         let turn = turn.inner();

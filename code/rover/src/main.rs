@@ -12,22 +12,21 @@ use {defmt_rtt as _, panic_probe as _};
 
 use embassy_executor::Spawner;
 use embassy_stm32::{
-    gpio::{Level, Output, OutputType, Speed},
-    time::khz,
+    gpio::Output,
     timer::simple_pwm,
 };
 use embassy_time::{Duration, Timer};
 use embedded_hal_02::PwmPin;
 use fmt::info;
 
-use rover_lib::{DrivePower, Motor, MyMotor};
+use rover_lib::{DrivePower, MecanumRobot, Motor, MyFourWheelRobot, MyMotor};
 
 struct PwmWrapper<'a, C, T, D, P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>> {
     pwm: &'a RefCell<P>,
     channel: C,
 }
 
-impl<'a, C: Copy, T, D, P> PwmWrapper<'a, C, T, D, P>
+impl<'a, C, T, D, P> PwmWrapper<'a, C, T, D, P>
 where
     P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>,
 {
@@ -82,40 +81,65 @@ where
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
-    let mut led = Output::new(p.PA5, Level::High, Speed::Low);
 
-    let ch1_pin = simple_pwm::PwmPin::new_ch1(p.PA8, OutputType::PushPull);
-    let ch2_pin = simple_pwm::PwmPin::new_ch2(p.PA9, OutputType::PushPull);
-    let ch3_pin = simple_pwm::PwmPin::new_ch3(p.PA10, OutputType::PushPull);
-    let ch4_pin = simple_pwm::PwmPin::new_ch4(p.PA11, OutputType::PushPull);
-    let pwm = RefCell::new(simple_pwm::SimplePwm::new(
-        p.TIM1,
-        Some(ch1_pin),
-        Some(ch2_pin),
-        Some(ch3_pin),
-        Some(ch4_pin),
-        khz(1),
-        Default::default(),
-    ));
+    let pwm = {
+        use embassy_stm32::{gpio::OutputType, time::khz};
 
-    let mut ch1 = PwmWrapper::new(&pwm, embassy_stm32::timer::Channel::Ch1);
-    // let mut ch2 = PwmWrapper::new(&pwm, embassy_stm32::timer::Channel::Ch2);
+        let channels = (
+            Some(simple_pwm::PwmPin::new_ch1(p.PA8, OutputType::PushPull)),
+            Some(simple_pwm::PwmPin::new_ch2(p.PA9, OutputType::PushPull)),
+            Some(simple_pwm::PwmPin::new_ch3(p.PA10, OutputType::PushPull)),
+            Some(simple_pwm::PwmPin::new_ch4(p.PA11, OutputType::PushPull)),
+        );
 
-    ch1.enable();
+        RefCell::new(simple_pwm::SimplePwm::new(
+            p.TIM1,
+            channels.0,
+            channels.1,
+            channels.2,
+            channels.3,
+            khz(1),
+            Default::default(),
+        ))
+    };
 
-    let dir_0 = Output::new(p.PB4, Level::Low, Speed::Low);
-    let dir_1 = Output::new(p.PB5, Level::Low, Speed::Low);
+    let mut robot = {
+        use embassy_stm32::{
+            gpio::{Level, Speed},
+            timer::Channel,
+        };
+        use embedded_hal_1::digital::PinState;
 
-    let mut motor = MyMotor::new(ch1, dir_0, dir_1, embedded_hal_1::digital::PinState::High);
+        MyFourWheelRobot::new(
+            MyMotor::new(
+                PwmWrapper::new(&pwm, Channel::Ch1),
+                Output::new(p.PC0, Level::Low, Speed::Low),
+                Output::new(p.PC1, Level::Low, Speed::Low),
+                PinState::High,
+            ),
+            MyMotor::new(
+                PwmWrapper::new(&pwm, Channel::Ch2),
+                Output::new(p.PC2, Level::Low, Speed::Low),
+                Output::new(p.PC3, Level::Low, Speed::Low),
+                PinState::High,
+            ),
+            MyMotor::new(
+                PwmWrapper::new(&pwm, Channel::Ch1),
+                Output::new(p.PC5, Level::Low, Speed::Low),
+                Output::new(p.PC10, Level::Low, Speed::Low),
+                PinState::High,
+            ),
+            MyMotor::new(
+                PwmWrapper::new(&pwm, Channel::Ch1),
+                Output::new(p.PC11, Level::Low, Speed::Low),
+                Output::new(p.PC12, Level::Low, Speed::Low),
+                PinState::High,
+            ),
+        )
+    };
 
     loop {
-        info!("Hello, World!");
-        led.set_high();
-        motor.drive(DrivePower::new(0.5)).unwrap();
-        Timer::after(Duration::from_millis(500)).await;
-
-        led.set_low();
-        motor.drive(DrivePower::new(1.0)).unwrap();
+        info!("Hello from rover!");
         Timer::after(Duration::from_millis(500)).await;
     }
 }
