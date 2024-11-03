@@ -11,7 +11,14 @@ members = ["crates/*"]
 [workspace.dependencies]
 embedded-hal-02 = { package = "embedded-hal", version = "0.2.7" }
 embedded-hal-1 = { package = "embedded-hal", version = "1.0" }
+embedded-hal-async = "1.0.0"
 libm = "0.2.11"
+defmt = { version = "0.3.8" }
+
+[workspace.dependencies.uom]
+version = "0.36.0"
+default-features = false
+features = ["f32", "autoconvert", "si", "serde"]
 
 [dependencies]
 rover_lib = { path = "crates/rover_lib", default-features = false }
@@ -21,7 +28,7 @@ cortex-m = { version = "0.7.7", features = [
     "critical-section-single-core",
 ] }
 cortex-m-rt = "0.7.3"
-defmt = { version = "0.3.8", optional = true }
+defmt = { workspace = true }
 defmt-rtt = { version = "0.4.1", optional = true }
 embassy-executor = { version = "0.6.1", features = [
     "arch-cortex-m",
@@ -38,11 +45,15 @@ embassy-stm32 = { version = "0.1.0", features = [
     "memory-x",
     "stm32f411re",
     "time-driver-any",
+    "exti",
 ] }
 
 embedded-hal-02 = { workspace = true }
 embedded-hal-1 = { workspace = true }
+embedded-hal-async = { workspace = true }
 libm = { workspace = true }
+embedded-alloc = "0.6.0"
+uom = { workspace = true }
 
 [[bin]]
 name = "rover"
@@ -62,7 +73,7 @@ opt-level = "z"
 incremental = true
 
 [features]
-defmt = ["dep:defmt"]
+defmt = []
 defmt-rtt = ["dep:defmt-rtt"]
 panic-probe = ["dep:panic-probe"]
 default = ["debug"]
