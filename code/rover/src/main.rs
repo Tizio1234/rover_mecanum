@@ -106,7 +106,7 @@ async fn generic_button_task<'a, E: core::error::Error>(
         button.wait_for_low().await;
         info!("making robot go forward");
         robot.drive(
-            DrivePower::new(0.5),
+            DrivePower::new(1.0),
             Angle::new::<uom::si::angle::radian>(core::f32::consts::FRAC_PI_2),
             Turn::new(0.0),
         ).unwrap();
@@ -167,14 +167,14 @@ async fn main(spawner: Spawner) {
         MyFourWheelRobot::new(
             MyMotor::new(
                 PwmWrapper::new(Rc::clone(&pwm), Channel::Ch1),
-                Output::new(p.PC0, Level::Low, Speed::Low),
-                Output::new(p.PC1, Level::Low, Speed::Low),
+                Output::new(p.PC4, Level::Low, Speed::Low),
+                Output::new(p.PB13, Level::Low, Speed::Low),
                 PinState::High,
             ),
             MyMotor::new(
                 PwmWrapper::new(Rc::clone(&pwm), Channel::Ch2),
-                Output::new(p.PC2, Level::Low, Speed::Low),
-                Output::new(p.PC3, Level::Low, Speed::Low),
+                Output::new(p.PB14, Level::Low, Speed::Low),
+                Output::new(p.PB15, Level::Low, Speed::Low),
                 PinState::High,
             ),
             MyMotor::new(
@@ -198,8 +198,8 @@ async fn main(spawner: Spawner) {
     );
     spawner.spawn(button_task(button, Box::new(robot))).unwrap();
 
-    loop {
+    /*loop {
         info!("Hello from rover!");
         Timer::after(Duration::from_millis(500)).await;
-    }
+    }*/
 }

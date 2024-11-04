@@ -76,7 +76,7 @@ incremental = true
 defmt = []
 defmt-rtt = ["dep:defmt-rtt"]
 panic-probe = ["dep:panic-probe"]
-default = ["debug"]
+default = ["debug", "pcb_shield_v0"]
 debug = [
     "defmt",
     "defmt-rtt",
@@ -88,3 +88,6 @@ debug = [
     "embassy-time/defmt-timestamp-uptime",
     "embassy-stm32/defmt",
 ]
+
+old_circuit = []
+pcb_shield_v0 = []
