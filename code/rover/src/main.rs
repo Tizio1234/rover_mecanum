@@ -130,12 +130,13 @@ async fn main(spawner: Spawner) {
 
     let pwm = {
         use embassy_stm32::{gpio::OutputType, time::khz, timer::Channel};
+        use simple_pwm::PwmPin;
 
         let channels = (
-            Some(simple_pwm::PwmPin::new_ch1(p.PA8, OutputType::PushPull)),
-            Some(simple_pwm::PwmPin::new_ch2(p.PA9, OutputType::PushPull)),
-            Some(simple_pwm::PwmPin::new_ch3(p.PA10, OutputType::PushPull)),
-            Some(simple_pwm::PwmPin::new_ch4(p.PA11, OutputType::PushPull)),
+            Some(PwmPin::new_ch1(p.PA8, OutputType::PushPull)),
+            Some(PwmPin::new_ch2(p.PA9, OutputType::PushPull)),
+            Some(PwmPin::new_ch3(p.PA10, OutputType::PushPull)),
+            Some(PwmPin::new_ch4(p.PA11, OutputType::PushPull)),
         );
 
         let mut pwm = simple_pwm::SimplePwm::new(
@@ -177,15 +178,15 @@ async fn main(spawner: Spawner) {
                 PinState::High,
             ),
             MyMotor::new(
-                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch1),
-                Output::new(p.PC5, Level::Low, Speed::Low),
-                Output::new(p.PC10, Level::Low, Speed::Low),
+                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch3),
+                Output::new(p.PB1, Level::Low, Speed::Low),
+                Output::new(p.PB2, Level::Low, Speed::Low),
                 PinState::High,
             ),
             MyMotor::new(
-                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch1),
-                Output::new(p.PC11, Level::Low, Speed::Low),
-                Output::new(p.PC12, Level::Low, Speed::Low),
+                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch4),
+                Output::new(p.PB12, Level::Low, Speed::Low),
+                Output::new(p.PC5, Level::Low, Speed::Low),
                 PinState::High,
             ),
         )

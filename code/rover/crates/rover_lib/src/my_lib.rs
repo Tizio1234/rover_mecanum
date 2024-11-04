@@ -5,10 +5,7 @@ use embedded_hal_1::{
 };
 // use uom::si::f32::Angle;
 
-use crate::{
-    iface::{DrivePower, FourWheeledRobot, Motor},
-    MecanumRobot,
-};
+use crate::iface::{DrivePower, FourWheeledRobot, Motor};
 
 pub struct MyMotor<P, O0, O1> {
     pwm: P,
