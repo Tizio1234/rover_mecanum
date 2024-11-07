@@ -6,7 +6,9 @@ mod fmt;
 extern crate alloc;
 
 use alloc::{boxed::Box, rc::Rc};
+use cobs::CobsDecoder;
 use embedded_alloc::LlffHeap as Heap;
+use serde_json::Value;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
@@ -20,13 +22,20 @@ use {defmt_rtt as _, panic_probe as _};
 
 use embassy_executor::Spawner;
 use embassy_stm32::{
+    bind_interrupts,
     exti::{Channel, ExtiInput},
     gpio::{AnyPin, Input, Output, Pin},
+    peripherals,
     timer::simple_pwm,
+    usart::{self, BufferedUart},
 };
 use embassy_time::{Duration, Timer};
 use embedded_hal_02::PwmPin;
+
 use fmt::info;
+
+use embedded_io::Write;
+use embedded_io_async::BufRead;
 
 use rover_lib::{
     iface::FWRMerror, my_lib::MyFourWheelRobotError, Angle, DrivePower, FourWheeledRobot,
@@ -105,11 +114,13 @@ async fn generic_button_task<'a, E: core::error::Error>(
     loop {
         button.wait_for_low().await;
         info!("making robot go forward");
-        robot.drive(
-            DrivePower::new(1.0),
-            Angle::new::<uom::si::angle::radian>(core::f32::consts::FRAC_PI_2),
-            Turn::new(0.0),
-        ).unwrap();
+        robot
+            .drive(
+                DrivePower::new(1.0),
+                Angle::new::<uom::si::angle::radian>(core::f32::consts::FRAC_PI_2),
+                Turn::new(0.0),
+            )
+            .unwrap();
 
         button.wait_for_high().await;
         info!("putting robot in neutral");
@@ -117,13 +128,18 @@ async fn generic_button_task<'a, E: core::error::Error>(
     }
 }
 
+bind_interrupts!(struct Irqs {
+    USART2 => usart::BufferedInterruptHandler<peripherals::USART2>;
+});
+
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
     let p = embassy_stm32::init(Default::default());
 
+    // allocator
     {
         use core::mem::MaybeUninit;
-        const HEAP_SIZE: usize = 2048;
+        const HEAP_SIZE: usize = 4096;
         static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
         unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
     }
@@ -198,8 +214,64 @@ async fn main(spawner: Spawner) {
     );
     spawner.spawn(button_task(button, Box::new(robot))).unwrap();
 
-    /*loop {
-        info!("Hello from rover!");
-        Timer::after(Duration::from_millis(500)).await;
-    }*/
+    const RX_SIZE: usize = 128;
+
+    let mut tx_buf = [0u8; 32];
+    let mut rx_buf = [0u8; RX_SIZE];
+
+    let buf_usart = BufferedUart::new(
+        p.USART2,
+        Irqs,
+        p.PA3,
+        p.PA2,
+        &mut tx_buf,
+        &mut rx_buf,
+        usart::Config::default(),
+    )
+    .unwrap();
+
+    let (mut tx, mut rx) = buf_usart.split();
+
+    loop {
+        let mut decode_out = [0u8; RX_SIZE];
+        let mut decoder = CobsDecoder::new(&mut decode_out);
+        let size = loop {
+            let buf = rx.fill_buf().await.unwrap();
+            let len = buf.len();
+
+            _ = writeln!(tx, "received raw: {:?}", buf);
+
+            match decoder.push(buf) {
+                Ok(Some((n, _))) => {
+                    rx.consume(len);
+                    break Some(n);
+                }
+                Ok(None) => {}
+                Err(_) => {
+                    rx.consume(len);
+                    break None;
+                }
+            }
+        };
+
+        if let Some(size) = size {
+            let packet_raw = &decode_out[..size];
+
+            match serde_json::from_slice::<Value>(packet_raw) {
+                Ok(v) => {
+                    _ = writeln!(tx, "p: {}, th: {}, tu: {}", v["p"], v["th"], v["tu"]);
+                }
+                Err(_) => {}
+            }
+
+            match core::str::from_utf8(packet_raw) {
+                Ok(s) => {
+                    _ = writeln!(tx, "utf8 packet: {s}");
+                }
+                Err(_) => _ = writeln!(tx, "raw packet: {:?}", packet_raw),
+            }
+        } else {
+            _ = writeln!(tx, "error decoding");
+        }
+    }
 }

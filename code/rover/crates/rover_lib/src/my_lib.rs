@@ -69,8 +69,6 @@ impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1>
 
         let duty_percent = ((libm::fabsf(power) / DrivePower::MAX) * 100.0) as u8;
 
-        info!("duty_percent: {}", duty_percent);
-
         self.dir_0.set_state(dirs.0).map_err(|_| Self::Error::Dir)?;
         self.dir_1.set_state(dirs.1).map_err(|_| Self::Error::Dir)?;
         self.pwm
