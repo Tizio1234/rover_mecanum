@@ -1,6 +1,6 @@
 pub use uom::si::f32::Angle;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct DrivePower(f32);
 
 impl DrivePower {
@@ -36,7 +36,7 @@ pub trait FourWheeledRobot {
     fn neutral(&mut self) -> Result<(), Self::Error>;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct Turn(f32);
 
 impl Turn {

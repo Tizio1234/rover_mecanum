@@ -1,14 +1,15 @@
 #![no_std]
 #![no_main]
 
-mod fmt;
-
 extern crate alloc;
 
-use alloc::{boxed::Box, rc::Rc};
+use alloc::{boxed::Box, rc::Rc, sync::Arc};
 use cobs::CobsDecoder;
+use defmt::{debug, warn, Display2Format};
+use embassy_sync::{blocking_mutex::raw as raw_mutex, mutex::Mutex};
 use embedded_alloc::LlffHeap as Heap;
 use serde_json::Value;
+use uom::si::angle;
 
 #[global_allocator]
 static HEAP: Heap = Heap::empty();
@@ -32,14 +33,13 @@ use embassy_stm32::{
 use embassy_time::{Duration, Timer};
 use embedded_hal_02::PwmPin;
 
-use fmt::info;
+use defmt::info;
 
-use embedded_io::Write;
 use embedded_io_async::BufRead;
 
 use rover_lib::{
-    iface::FWRMerror, my_lib::MyFourWheelRobotError, Angle, DrivePower, FourWheeledRobot,
-    MecanumRobot, Motor, MyFourWheelRobot, MyMotor, Turn,
+    iface::FWRMerror, my_lib::MyFourWheelRobotError, Angle, DrivePower, MecanumRobot,
+    MyFourWheelRobot, MyMotor, Turn,
 };
 
 struct PwmWrapper<C, T, D, P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>> {
@@ -102,29 +102,33 @@ where
 #[embassy_executor::task]
 async fn button_task(
     button: ExtiInput<'static, AnyPin>,
-    mut robot: Box<dyn MecanumRobot<Error = FWRMerror<MyFourWheelRobotError>>>,
+    mut robot: Arc<
+        Mutex<raw_mutex::NoopRawMutex, dyn MecanumRobot<Error = FWRMerror<MyFourWheelRobotError>>>,
+    >,
 ) {
-    generic_button_task(button, robot.as_mut()).await;
+    generic_button_task(button, robot).await;
 }
 
 async fn generic_button_task<'a, E: core::error::Error>(
     mut button: ExtiInput<'a, AnyPin>,
-    robot: &'a mut dyn (MecanumRobot<Error = E>),
+    robot: Arc<Mutex<raw_mutex::NoopRawMutex, dyn (MecanumRobot<Error = E>)>>,
 ) {
     loop {
         button.wait_for_low().await;
         info!("making robot go forward");
         robot
+            .lock()
+            .await
             .drive(
                 DrivePower::new(1.0),
-                Angle::new::<uom::si::angle::radian>(core::f32::consts::FRAC_PI_2),
+                Angle::new::<angle::radian>(core::f32::consts::FRAC_PI_2),
                 Turn::new(0.0),
             )
             .unwrap();
 
         button.wait_for_high().await;
         info!("putting robot in neutral");
-        robot.neutral().unwrap();
+        robot.lock().await.neutral().unwrap();
     }
 }
 
@@ -212,7 +216,8 @@ async fn main(spawner: Spawner) {
         Input::new(p.PC13.degrade(), embassy_stm32::gpio::Pull::Up),
         p.EXTI13.degrade(),
     );
-    spawner.spawn(button_task(button, Box::new(robot))).unwrap();
+    let robot_m = Arc::new(Mutex::new(robot));
+    spawner.spawn(button_task(button, robot_m.clone())).unwrap();
 
     const RX_SIZE: usize = 128;
 
@@ -232,6 +237,10 @@ async fn main(spawner: Spawner) {
 
     let (mut tx, mut rx) = buf_usart.split();
 
+    let mut p = DrivePower::default();
+    let mut th = Angle::default();
+    let mut tu = Turn::default();
+
     loop {
         let mut decode_out = [0u8; RX_SIZE];
         let mut decoder = CobsDecoder::new(&mut decode_out);
@@ -239,7 +248,7 @@ async fn main(spawner: Spawner) {
             let buf = rx.fill_buf().await.unwrap();
             let len = buf.len();
 
-            _ = writeln!(tx, "received raw: {:?}", buf);
+            debug!("received raw: {:?}", buf);
 
             match decoder.push(buf) {
                 Ok(Some((n, _))) => {
@@ -259,19 +268,52 @@ async fn main(spawner: Spawner) {
 
             match serde_json::from_slice::<Value>(packet_raw) {
                 Ok(v) => {
-                    _ = writeln!(tx, "p: {}, th: {}, tu: {}", v["p"], v["th"], v["tu"]);
-                }
-                Err(_) => {}
-            }
+                    let p_json = v["p"].clone();
+                    let th_json = v["th"].clone();
+                    let tu_json = v["tu"].clone();
+                    info!(
+                        "p: {}, th: {}, tu: {}",
+                        Display2Format(&p_json),
+                        Display2Format(&th_json),
+                        Display2Format(&tu_json)
+                    );
 
-            match core::str::from_utf8(packet_raw) {
-                Ok(s) => {
-                    _ = writeln!(tx, "utf8 packet: {s}");
+                    let mut change_needed = false;
+
+                    if let Value::Number(n) = p_json {
+                        if let Some(n) = n.as_f64() {
+                            p = DrivePower::new(n as f32);
+                            change_needed = true;
+                        }
+                    }
+                    if let Value::Number(n) = th_json {
+                        if let Some(n) = n.as_f64() {
+                            th = Angle::new::<angle::radian>(n as f32);
+                            change_needed = true;
+                        }
+                    }
+                    if let Value::Number(n) = tu_json {
+                        if let Some(n) = n.as_f64() {
+                            tu = Turn::new(n as f32);
+                            change_needed = true;
+                        }
+                    }
+
+                    if change_needed {
+                        _ = robot_m
+                            .lock()
+                            .await
+                            .drive(p, th, tu)
+                            .inspect(|_| info!("all went well"))
+                            .inspect_err(|_| warn!("failed to drive robot"));
+                    };
                 }
-                Err(_) => _ = writeln!(tx, "raw packet: {:?}", packet_raw),
+                Err(_) => {
+                    warn!("error decoding json");
+                }
             }
         } else {
-            _ = writeln!(tx, "error decoding");
+            warn!("error decoding cobs");
         }
     }
 }

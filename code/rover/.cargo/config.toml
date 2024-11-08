@@ -7,7 +7,7 @@ runner = 'probe-rs run --chip STM32F411RETx --connect-under-reset'
 target = "thumbv7em-none-eabihf"
 
 [env]
-DEFMT_LOG = "warn"
+DEFMT_LOG = "info"
 
 [unstable]
 build-std = ["core"]

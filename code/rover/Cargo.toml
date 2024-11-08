@@ -28,10 +28,10 @@ cortex-m = { version = "0.7.7", features = [
     "inline-asm",
     "critical-section-single-core",
 ] }
-cortex-m-rt = "0.7.3"
+cortex-m-rt = "0.7.5"
 defmt = { workspace = true }
 defmt-rtt = { version = "0.4.1", optional = true }
-embassy-executor = { version = "0.6.1", features = [
+embassy-executor = { version = "0.6.2", features = [
     "arch-cortex-m",
     "executor-thread",
     "integrated-timers",
@@ -85,10 +85,9 @@ defmt = []
 defmt-rtt = ["dep:defmt-rtt"]
 panic-probe = ["dep:panic-probe"]
 default = ["debug", "pcb_shield_v0"]
-debug = [
-    "defmt",
-    "defmt-rtt",
-    "panic-probe",
+debug = ["defmt", "defmt-rtt", "panic-probe"]
+advanced_debug = ["embassy_defmt"]
+embassy_defmt = [
     "embassy-executor/defmt",
     "embassy-sync/defmt",
     "embassy-futures/defmt",

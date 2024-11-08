@@ -1,4 +1,3 @@
-use defmt::info;
 use embedded_hal_1::{
     digital::{OutputPin, PinState},
     pwm::SetDutyCycle,
@@ -13,6 +12,7 @@ pub struct MyMotor<P, O0, O1> {
     dir_1: O1,
     dir_active: PinState,
     dir_passive: PinState,
+    power: DrivePower,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -51,6 +51,7 @@ impl<P, O0, O1> MyMotor<P, O0, O1> {
             dir_1,
             dir_active,
             dir_passive: dir_active.opposite(),
+            power: Default::default(),
         }
     }
 }
@@ -59,21 +60,23 @@ impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1>
     type Error = MyMotorError;
 
     fn drive(&mut self, power: DrivePower) -> Result<(), Self::Error> {
-        let power = power.inner();
+        let inner_power = power.inner();
 
-        let dirs = if power >= 0.0 {
+        let dirs = if inner_power >= 0.0 {
             (self.dir_active, self.dir_passive)
         } else {
             (self.dir_passive, self.dir_active)
         };
 
-        let duty_percent = ((libm::fabsf(power) / DrivePower::MAX) * 100.0) as u8;
+        let duty_percent = ((libm::fabsf(inner_power) / DrivePower::MAX) * 100.0) as u8;
 
         self.dir_0.set_state(dirs.0).map_err(|_| Self::Error::Dir)?;
         self.dir_1.set_state(dirs.1).map_err(|_| Self::Error::Dir)?;
         self.pwm
             .set_duty_cycle_percent(duty_percent)
             .map_err(|_| Self::Error::Pwm)?;
+
+        self.power = power;
 
         Ok(())
     }
@@ -156,18 +159,11 @@ impl<FL: Motor, FR: Motor, BL: Motor, BR: Motor> FourWheeledRobot
         Ok(())
     }
     fn neutral(&mut self) -> Result<(), Self::Error> {
-        self.fl
-            .neutral()
-            .map_err(|_| Self::Error::Motor(MyMotorKind::Fl))?;
-        self.fr
-            .neutral()
-            .map_err(|_| Self::Error::Motor(MyMotorKind::Fr))?;
-        self.bl
-            .neutral()
-            .map_err(|_| Self::Error::Motor(MyMotorKind::Bl))?;
-        self.br
-            .neutral()
-            .map_err(|_| Self::Error::Motor(MyMotorKind::Br))?;
+        use MyMotorKind::*;
+        self.fl.neutral().map_err(|_| Self::Error::Motor(Fl))?;
+        self.fr.neutral().map_err(|_| Self::Error::Motor(Fr))?;
+        self.bl.neutral().map_err(|_| Self::Error::Motor(Bl))?;
+        self.br.neutral().map_err(|_| Self::Error::Motor(Br))?;
 
         Ok(())
     }
