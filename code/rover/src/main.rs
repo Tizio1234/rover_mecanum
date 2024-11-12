@@ -296,7 +296,7 @@ async fn main(spawner: Spawner) {
                     }
                 }
             },
-            async { Timer::after_millis(300) },
+            async { Timer::after_millis(300).await; robot_m.lock().await.neutral() },
         )
         .await;
 
