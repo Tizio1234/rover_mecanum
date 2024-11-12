@@ -4,7 +4,7 @@ use embedded_hal_1::{
 };
 // use uom::si::f32::Angle;
 
-use crate::iface::{DrivePower, FourWheeledRobot, Motor};
+use crate::iface::{MotorPower, FourWheeledRobot, Motor};
 
 pub struct MyMotor<P, O0, O1> {
     pwm: P,
@@ -12,7 +12,7 @@ pub struct MyMotor<P, O0, O1> {
     dir_1: O1,
     dir_active: PinState,
     dir_passive: PinState,
-    power: DrivePower,
+    power: MotorPower,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -59,7 +59,7 @@ impl<P, O0, O1> MyMotor<P, O0, O1> {
 impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1> {
     type Error = MyMotorError;
 
-    fn drive(&mut self, power: DrivePower) -> Result<(), Self::Error> {
+    fn drive(&mut self, power: MotorPower) -> Result<(), Self::Error> {
         let inner_power = power.inner();
 
         let dirs = if inner_power >= 0.0 {
@@ -68,7 +68,7 @@ impl<P: SetDutyCycle, O0: OutputPin, O1: OutputPin> Motor for MyMotor<P, O0, O1>
             (self.dir_passive, self.dir_active)
         };
 
-        let duty_percent = ((libm::fabsf(inner_power) / DrivePower::MAX) * 100.0) as u8;
+        let duty_percent = ((libm::fabsf(inner_power) / MotorPower::MAX) * 100.0) as u8;
 
         self.dir_0.set_state(dirs.0).map_err(|_| Self::Error::Dir)?;
         self.dir_1.set_state(dirs.1).map_err(|_| Self::Error::Dir)?;
@@ -138,10 +138,10 @@ impl<FL: Motor, FR: Motor, BL: Motor, BR: Motor> FourWheeledRobot
 
     fn drive(
         &mut self,
-        fl: DrivePower,
-        fr: DrivePower,
-        bl: DrivePower,
-        br: DrivePower,
+        fl: MotorPower,
+        fr: MotorPower,
+        bl: MotorPower,
+        br: MotorPower,
     ) -> Result<(), Self::Error> {
         self.fl
             .drive(fl)

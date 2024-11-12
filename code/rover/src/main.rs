@@ -3,9 +3,9 @@
 
 extern crate alloc;
 
-use alloc::{boxed::Box, rc::Rc, sync::Arc};
+use alloc::{rc::Rc, sync::Arc};
 use cobs::CobsDecoder;
-use defmt::{debug, warn, Display2Format};
+use defmt::{debug, warn, Debug2Format, Display2Format};
 use embassy_sync::{blocking_mutex::raw as raw_mutex, mutex::Mutex};
 use embedded_alloc::LlffHeap as Heap;
 use serde_json::Value;
@@ -38,8 +38,9 @@ use defmt::info;
 use embedded_io_async::BufRead;
 
 use rover_lib::{
-    iface::FWRMerror, my_lib::MyFourWheelRobotError, Angle, DrivePower, MecanumRobot,
-    MyFourWheelRobot, MyMotor, Turn,
+    iface::{FWRMerror, MecanumPower},
+    my_lib::MyFourWheelRobotError,
+    Angle, MecanumRobot, MotorPower, MyFourWheelRobot, MyMotor, Turn,
 };
 
 struct PwmWrapper<C, T, D, P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>> {
@@ -102,7 +103,7 @@ where
 #[embassy_executor::task]
 async fn button_task(
     button: ExtiInput<'static, AnyPin>,
-    mut robot: Arc<
+    robot: Arc<
         Mutex<raw_mutex::NoopRawMutex, dyn MecanumRobot<Error = FWRMerror<MyFourWheelRobotError>>>,
     >,
 ) {
@@ -120,7 +121,7 @@ async fn generic_button_task<'a, E: core::error::Error>(
             .lock()
             .await
             .drive(
-                DrivePower::new(1.0),
+                MecanumPower::new(1.0),
                 Angle::new::<angle::radian>(core::f32::consts::FRAC_PI_2),
                 Turn::new(0.0),
             )
@@ -143,7 +144,7 @@ async fn main(spawner: Spawner) {
     // allocator
     {
         use core::mem::MaybeUninit;
-        const HEAP_SIZE: usize = 4096;
+        const HEAP_SIZE: usize = 0x4000;
         static mut HEAP_MEM: [MaybeUninit<u8>; HEAP_SIZE] = [MaybeUninit::uninit(); HEAP_SIZE];
         unsafe { HEAP.init(HEAP_MEM.as_ptr() as usize, HEAP_SIZE) }
     }
@@ -184,32 +185,61 @@ async fn main(spawner: Spawner) {
         };
         use embedded_hal_1::digital::PinState;
 
-        MyFourWheelRobot::new(
-            MyMotor::new(
-                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch1),
-                Output::new(p.PC4, Level::Low, Speed::Low),
-                Output::new(p.PB13, Level::Low, Speed::Low),
-                PinState::High,
-            ),
-            MyMotor::new(
-                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch2),
-                Output::new(p.PB14, Level::Low, Speed::Low),
-                Output::new(p.PB15, Level::Low, Speed::Low),
-                PinState::High,
-            ),
-            MyMotor::new(
-                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch3),
-                Output::new(p.PB1, Level::Low, Speed::Low),
-                Output::new(p.PB2, Level::Low, Speed::Low),
-                PinState::High,
-            ),
-            MyMotor::new(
-                PwmWrapper::new(Rc::clone(&pwm), Channel::Ch4),
-                Output::new(p.PB12, Level::Low, Speed::Low),
-                Output::new(p.PC5, Level::Low, Speed::Low),
-                PinState::High,
-            ),
-        )
+        if cfg!(feature = "old_circuit") {
+            MyFourWheelRobot::new(
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch1),
+                    Output::new(p.PC4.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PB13.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch2),
+                    Output::new(p.PB14.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PB15.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch3),
+                    Output::new(p.PB1.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PB2.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch4),
+                    Output::new(p.PB12.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PC5.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+            )
+        } else {
+            MyFourWheelRobot::new(
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch1),
+                    Output::new(p.PC0.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PC1.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch2),
+                    Output::new(p.PC2.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PC3.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch3),
+                    Output::new(p.PC5.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PC10.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+                MyMotor::new(
+                    PwmWrapper::new(Rc::clone(&pwm), Channel::Ch4),
+                    Output::new(p.PC11.degrade(), Level::Low, Speed::Low),
+                    Output::new(p.PC12.degrade(), Level::Low, Speed::Low),
+                    PinState::High,
+                ),
+            )
+        }
     };
 
     let button: ExtiInput<'static, AnyPin> = ExtiInput::new(
@@ -235,32 +265,44 @@ async fn main(spawner: Spawner) {
     )
     .unwrap();
 
+    #[allow(unused)]
     let (mut tx, mut rx) = buf_usart.split();
 
-    let mut p = DrivePower::default();
+    let mut p = MecanumPower::default();
     let mut th = Angle::default();
     let mut tu = Turn::default();
-
+    
     loop {
         let mut decode_out = [0u8; RX_SIZE];
-        let mut decoder = CobsDecoder::new(&mut decode_out);
-        let size = loop {
-            let buf = rx.fill_buf().await.unwrap();
-            let len = buf.len();
+        let res = embassy_futures::select::select(
+            async {
+                let mut decoder = CobsDecoder::new(&mut decode_out);
+                loop {
+                    let buf = rx.fill_buf().await.unwrap();
+                    let len = buf.len();
 
-            debug!("received raw: {:?}", buf);
+                    // info!("received raw: {:?}", buf);
 
-            match decoder.push(buf) {
-                Ok(Some((n, _))) => {
-                    rx.consume(len);
-                    break Some(n);
+                    match decoder.push(buf) {
+                        Ok(Some((n, _))) => {
+                            rx.consume(len);
+                            break Some(n);
+                        }
+                        Ok(None) => {}
+                        Err(_) => {
+                            rx.consume(len);
+                            break None;
+                        }
+                    }
                 }
-                Ok(None) => {}
-                Err(_) => {
-                    rx.consume(len);
-                    break None;
-                }
-            }
+            },
+            async { Timer::after_millis(300) },
+        )
+        .await;
+
+        let size = match res {
+            embassy_futures::select::Either::First(r) => r,
+            embassy_futures::select::Either::Second(_) => continue,
         };
 
         if let Some(size) = size {
@@ -268,21 +310,21 @@ async fn main(spawner: Spawner) {
 
             match serde_json::from_slice::<Value>(packet_raw) {
                 Ok(v) => {
-                    let p_json = v["p"].clone();
-                    let th_json = v["th"].clone();
-                    let tu_json = v["tu"].clone();
-                    info!(
+                    let p_json = &v["p"];
+                    let th_json = &v["th"];
+                    let tu_json = &v["tu"];
+                    /*info!(
                         "p: {}, th: {}, tu: {}",
-                        Display2Format(&p_json),
-                        Display2Format(&th_json),
-                        Display2Format(&tu_json)
-                    );
+                        Debug2Format(&p_json.as_str()),
+                        Debug2Format(&th_json.as_f64()),
+                        Debug2Format(&tu_json.as_f64())
+                    );*/
 
                     let mut change_needed = false;
 
                     if let Value::Number(n) = p_json {
                         if let Some(n) = n.as_f64() {
-                            p = DrivePower::new(n as f32);
+                            p = MecanumPower::new(n as f32);
                             change_needed = true;
                         }
                     }
@@ -300,6 +342,12 @@ async fn main(spawner: Spawner) {
                     }
 
                     if change_needed {
+                        info!(
+                            "p: {}, th: {}, tu: {}",
+                            p.inner(),
+                            th.get::<uom::si::angle::radian>(),
+                            tu.inner()
+                        );
                         _ = robot_m
                             .lock()
                             .await
