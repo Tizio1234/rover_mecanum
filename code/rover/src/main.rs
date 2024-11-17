@@ -40,7 +40,7 @@ use embedded_io_async::BufRead;
 use rover_lib::{
     iface::{FWRMerror, MecanumPower},
     my_lib::MyFourWheelRobotError,
-    Angle, MecanumRobot, MotorPower, MyFourWheelRobot, MyMotor, Turn,
+    Angle, MecanumRobot, MyFourWheelRobot, MyMotor, Turn,
 };
 
 struct PwmWrapper<C, T, D, P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>> {
@@ -101,17 +101,17 @@ where
 }
 
 #[embassy_executor::task]
-async fn button_task(
+async fn rover_task(
     button: ExtiInput<'static, AnyPin>,
     robot: Arc<
         Mutex<raw_mutex::NoopRawMutex, dyn MecanumRobot<Error = FWRMerror<MyFourWheelRobotError>>>,
     >,
 ) {
-    generic_button_task(button, robot).await;
+    generic_rover_task(button, robot).await;
 }
 
-async fn generic_button_task<'a, E: core::error::Error>(
-    mut button: ExtiInput<'a, AnyPin>,
+async fn generic_rover_task<E: core::error::Error>(
+    mut button: ExtiInput<'_, AnyPin>,
     robot: Arc<Mutex<raw_mutex::NoopRawMutex, dyn (MecanumRobot<Error = E>)>>,
 ) {
     loop {
@@ -134,7 +134,7 @@ async fn generic_button_task<'a, E: core::error::Error>(
 }
 
 bind_interrupts!(struct Irqs {
-    USART2 => usart::BufferedInterruptHandler<peripherals::USART2>;
+    USART6 => usart::BufferedInterruptHandler<peripherals::USART6>;
 });
 
 #[embassy_executor::main]
@@ -247,7 +247,7 @@ async fn main(spawner: Spawner) {
         p.EXTI13.degrade(),
     );
     let robot_m = Arc::new(Mutex::new(robot));
-    spawner.spawn(button_task(button, robot_m.clone())).unwrap();
+    spawner.spawn(rover_task(button, robot_m.clone())).unwrap();
 
     const RX_SIZE: usize = 128;
 
@@ -255,10 +255,10 @@ async fn main(spawner: Spawner) {
     let mut rx_buf = [0u8; RX_SIZE];
 
     let buf_usart = BufferedUart::new(
-        p.USART2,
+        p.USART6,
         Irqs,
-        p.PA3,
-        p.PA2,
+        p.PC7,
+        p.PC6,
         &mut tx_buf,
         &mut rx_buf,
         usart::Config::default(),
@@ -271,38 +271,75 @@ async fn main(spawner: Spawner) {
     let mut p = MecanumPower::default();
     let mut th = Angle::default();
     let mut tu = Turn::default();
-    
+
     loop {
         let mut decode_out = [0u8; RX_SIZE];
-        let res = embassy_futures::select::select(
+        /*let res = embassy_futures::select::select(
             async {
                 let mut decoder = CobsDecoder::new(&mut decode_out);
                 loop {
                     let buf = rx.fill_buf().await.unwrap();
                     let len = buf.len();
 
-                    // info!("received raw: {:?}", buf);
+                    info!(
+                        "received raw: {:?}",
+                        Debug2Format(&core::str::from_utf8(buf))
+                    );
 
                     match decoder.push(buf) {
-                        Ok(Some((n, _))) => {
-                            rx.consume(len);
+                        Ok(Some((n, m))) => {
+                            rx.consume(m);
                             break Some(n);
                         }
-                        Ok(None) => {}
+                        Ok(None) => {
+                            rx.consume(len);
+                        }
                         Err(_) => {
                             rx.consume(len);
+                            info!("error decoding cobs");
                             break None;
                         }
                     }
                 }
             },
-            async { Timer::after_millis(300).await; robot_m.lock().await.neutral() },
+            async {
+                Timer::after_millis(500).await;
+                if let Ok(mut r) = robot_m.try_lock() {
+                    _ = r.neutral();
+                }
+            },
         )
         .await;
 
         let size = match res {
             embassy_futures::select::Either::First(r) => r,
             embassy_futures::select::Either::Second(_) => continue,
+        };*/
+
+        let mut decoder = CobsDecoder::new(&mut decode_out);
+        let size = loop {
+            let buf = rx.fill_buf().await.unwrap();
+            let len = buf.len();
+
+            info!(
+                "received raw: {:?}",
+                Debug2Format(&core::str::from_utf8(buf))
+            );
+
+            match decoder.push(buf) {
+                Ok(Some((n, m))) => {
+                    rx.consume(m);
+                    break Some(n);
+                }
+                Ok(None) => {
+                    rx.consume(len);
+                }
+                Err(_) => {
+                    rx.consume(len);
+                    info!("error decoding cobs");
+                    break None;
+                }
+            }
         };
 
         if let Some(size) = size {
@@ -322,23 +359,17 @@ async fn main(spawner: Spawner) {
 
                     let mut change_needed = false;
 
-                    if let Value::Number(n) = p_json {
-                        if let Some(n) = n.as_f64() {
-                            p = MecanumPower::new(n as f32);
-                            change_needed = true;
-                        }
+                    if let Some(n) = p_json.as_f64() {
+                        p = MecanumPower::new(n as f32);
+                        change_needed = true;
                     }
-                    if let Value::Number(n) = th_json {
-                        if let Some(n) = n.as_f64() {
-                            th = Angle::new::<angle::radian>(n as f32);
-                            change_needed = true;
-                        }
+                    if let Some(n) = th_json.as_f64() {
+                        th = Angle::new::<angle::radian>(n as f32);
+                        change_needed = true;
                     }
-                    if let Value::Number(n) = tu_json {
-                        if let Some(n) = n.as_f64() {
-                            tu = Turn::new(n as f32);
-                            change_needed = true;
-                        }
+                    if let Some(n) = tu_json.as_f64() {
+                        tu = Turn::new(n as f32);
+                        change_needed = true;
                     }
 
                     if change_needed {
@@ -360,8 +391,6 @@ async fn main(spawner: Spawner) {
                     warn!("error decoding json");
                 }
             }
-        } else {
-            warn!("error decoding cobs");
         }
     }
 }

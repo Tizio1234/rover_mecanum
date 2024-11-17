@@ -73,6 +73,17 @@ pub trait MecanumRobot {
 
     fn drive(&mut self, power: MecanumPower, theta: Angle, turn: Turn) -> Result<(), Self::Error>;
     fn neutral(&mut self) -> Result<(), Self::Error>;
+    fn control(&mut self, ctrl: MecanumControl) -> Result<(), Self::Error> {
+        match ctrl {
+            MecanumControl::Neutral => self.neutral(),
+            MecanumControl::Drive(p, th, tu) => self.drive(p, th, tu),
+        }
+    }
+}
+
+pub enum MecanumControl {
+    Neutral,
+    Drive(MecanumPower, Angle, Turn),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
