@@ -350,12 +350,12 @@ async fn main(spawner: Spawner) {
                     let p_json = &v["p"];
                     let th_json = &v["th"];
                     let tu_json = &v["tu"];
-                    /*info!(
+                    debug!(
                         "p: {}, th: {}, tu: {}",
                         Debug2Format(&p_json.as_str()),
                         Debug2Format(&th_json.as_f64()),
-                        Debug2Format(&tu_json.as_f64())
-                    );*/
+                        Debug2Format(&tu_json.as_f64()),
+                    );
 
                     let mut change_needed = false;
 
