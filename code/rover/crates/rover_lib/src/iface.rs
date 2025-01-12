@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 pub use uom::si::f32::Angle;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
@@ -16,7 +17,7 @@ impl MotorPower {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct MecanumPower(f32);
 
 impl MecanumPower {
@@ -52,7 +53,7 @@ pub trait FourWheeledRobot {
     fn neutral(&mut self) -> Result<(), Self::Error>;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 pub struct Turn(f32);
 
 impl Turn {

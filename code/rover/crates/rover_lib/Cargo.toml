@@ -10,3 +10,4 @@ embedded-hal-async = { workspace = true }
 libm = { workspace = true }
 uom = { workspace = true }
 defmt = { workspace = true }
+serde = { version = "1.0.217", default-features = false, features = ["alloc", "derive"] }

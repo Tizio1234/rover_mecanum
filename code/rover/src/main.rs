@@ -6,8 +6,14 @@ extern crate alloc;
 use alloc::{rc::Rc, sync::Arc};
 use cobs::CobsDecoder;
 use defmt::{debug, warn, Debug2Format, Display2Format};
-use embassy_sync::{blocking_mutex::raw as raw_mutex, mutex::Mutex};
+use embassy_futures::select::Either;
+use embassy_sync::{
+    blocking_mutex::raw::{self as raw_mutex, CriticalSectionRawMutex, NoopRawMutex},
+    mutex::Mutex,
+    signal,
+};
 use embedded_alloc::LlffHeap as Heap;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uom::si::angle;
 
@@ -21,7 +27,7 @@ use panic_halt as _;
 #[cfg(feature = "defmt")]
 use {defmt_rtt as _, panic_probe as _};
 
-use embassy_executor::Spawner;
+use embassy_executor::{task, Spawner};
 use embassy_stm32::{
     bind_interrupts,
     exti::{Channel, ExtiInput},
@@ -85,7 +91,6 @@ impl<C, T, D, P: embedded_hal_02::Pwm<Channel = C, Time = T, Duty = D>>
 {
     type Error = embedded_hal_1::pwm::ErrorKind;
 }
-
 impl<C: Copy, T, D, P> embedded_hal_1::pwm::SetDutyCycle for PwmWrapper<C, T, D, P>
 where
     D: TryFrom<u16> + Into<u16>,
@@ -136,6 +141,13 @@ async fn generic_rover_task<E: core::error::Error>(
 bind_interrupts!(struct Irqs {
     USART6 => usart::BufferedInterruptHandler<peripherals::USART6>;
 });
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct RxMessage {
+    p: Option<MecanumPower>,
+    th: Option<Angle>,
+    tu: Option<Turn>,
+}
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
@@ -247,7 +259,11 @@ async fn main(spawner: Spawner) {
         p.EXTI13.degrade(),
     );
     let robot_m = Arc::new(Mutex::new(robot));
+
+    static SIGNAL: signal::Signal<CriticalSectionRawMutex, ()> = const {signal::Signal::new()};
+
     spawner.spawn(rover_task(button, robot_m.clone())).unwrap();
+    spawner.spawn(safety_timer(robot_m.clone(), &SIGNAL)).unwrap();
 
     const RX_SIZE: usize = 128;
 
@@ -274,54 +290,13 @@ async fn main(spawner: Spawner) {
 
     loop {
         let mut decode_out = [0u8; RX_SIZE];
-        /*let res = embassy_futures::select::select(
-            async {
-                let mut decoder = CobsDecoder::new(&mut decode_out);
-                loop {
-                    let buf = rx.fill_buf().await.unwrap();
-                    let len = buf.len();
-
-                    info!(
-                        "received raw: {:?}",
-                        Debug2Format(&core::str::from_utf8(buf))
-                    );
-
-                    match decoder.push(buf) {
-                        Ok(Some((n, m))) => {
-                            rx.consume(m);
-                            break Some(n);
-                        }
-                        Ok(None) => {
-                            rx.consume(len);
-                        }
-                        Err(_) => {
-                            rx.consume(len);
-                            info!("error decoding cobs");
-                            break None;
-                        }
-                    }
-                }
-            },
-            async {
-                Timer::after_millis(500).await;
-                if let Ok(mut r) = robot_m.try_lock() {
-                    _ = r.neutral();
-                }
-            },
-        )
-        .await;
-
-        let size = match res {
-            embassy_futures::select::Either::First(r) => r,
-            embassy_futures::select::Either::Second(_) => continue,
-        };*/
 
         let mut decoder = CobsDecoder::new(&mut decode_out);
         let size = loop {
             let buf = rx.fill_buf().await.unwrap();
             let len = buf.len();
 
-            info!(
+            debug!(
                 "received raw: {:?}",
                 Debug2Format(&core::str::from_utf8(buf))
             );
@@ -336,7 +311,7 @@ async fn main(spawner: Spawner) {
                 }
                 Err(_) => {
                     rx.consume(len);
-                    info!("error decoding cobs");
+                    warn!("error decoding cobs");
                     break None;
                 }
             }
@@ -345,52 +320,73 @@ async fn main(spawner: Spawner) {
         if let Some(size) = size {
             let packet_raw = &decode_out[..size];
 
-            match serde_json::from_slice::<Value>(packet_raw) {
-                Ok(v) => {
-                    let p_json = &v["p"];
-                    let th_json = &v["th"];
-                    let tu_json = &v["tu"];
-                    debug!(
-                        "p: {}, th: {}, tu: {}",
-                        Debug2Format(&p_json.as_str()),
-                        Debug2Format(&th_json.as_f64()),
-                        Debug2Format(&tu_json.as_f64()),
-                    );
+            let Ok(rx_message) = serde_json::from_slice::<RxMessage>(packet_raw) else {
+                continue;
+            };
+            SIGNAL.signal(());
 
-                    let mut change_needed = false;
+            let mut change_needed = false;
 
-                    if let Some(n) = p_json.as_f64() {
-                        p = MecanumPower::new(n as f32);
-                        change_needed = true;
-                    }
-                    if let Some(n) = th_json.as_f64() {
-                        th = Angle::new::<angle::radian>(n as f32);
-                        change_needed = true;
-                    }
-                    if let Some(n) = tu_json.as_f64() {
-                        tu = Turn::new(n as f32);
-                        change_needed = true;
-                    }
+            rx_message.p.inspect(|v| {
+                p = *v;
+                change_needed = true;
+            });
+            rx_message.th.inspect(|v| {
+                th = *v;
+                change_needed = true;
+            });
+            rx_message.tu.inspect(|v| {
+                tu = *v;
+                change_needed = true;
+            });
 
-                    if change_needed {
-                        info!(
-                            "p: {}, th: {}, tu: {}",
-                            p.inner(),
-                            th.get::<uom::si::angle::radian>(),
-                            tu.inner()
-                        );
-                        _ = robot_m
-                            .lock()
-                            .await
-                            .drive(p, th, tu)
-                            .inspect(|_| info!("all went well"))
-                            .inspect_err(|_| warn!("failed to drive robot"));
-                    };
-                }
-                Err(_) => {
-                    warn!("error decoding json");
-                }
-            }
+            if change_needed {
+                debug!(
+                    "p: {}, th: {}, tu: {}",
+                    p.inner(),
+                    th.get::<uom::si::angle::radian>(),
+                    tu.inner()
+                );
+                _ = robot_m
+                    .lock()
+                    .await
+                    .drive(p, th, tu)
+                    .inspect(|_| info!("all went well"))
+                    .inspect_err(|_| warn!("failed to drive robot"));
+            };
         }
+    }
+}
+
+type SafetyMutex = CriticalSectionRawMutex;
+
+#[task]
+async fn safety_timer(
+    robot: Arc<
+        Mutex<NoopRawMutex, dyn MecanumRobot<Error = FWRMerror<MyFourWheelRobotError>>>,
+    >,
+    sig: &'static signal::Signal<SafetyMutex, ()>,
+) {
+    safety_timer_generic(robot, sig).await;
+}
+
+async fn safety_timer_generic<E: core::error::Error>(
+    robot: Arc<Mutex<NoopRawMutex, dyn (MecanumRobot<Error = E>)>>,
+    sig: &'static signal::Signal<SafetyMutex, ()>,
+) {
+    loop {
+        let Either::First(_) =
+            embassy_futures::select::select(async { Timer::after_millis(500).await }, async {
+                sig.wait().await
+            })
+            .await
+        else {
+            continue;
+        };
+        robot
+            .lock()
+            .await
+            .neutral()
+            .expect("failed to stop robot in safety timer");
     }
 }
